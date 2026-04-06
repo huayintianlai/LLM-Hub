@@ -1,424 +1,1881 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LLM Hub 仪表板</title>
+  <title>LLM Hub Console</title>
+  <link
+    rel="icon"
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230f172a'/%3E%3Cpath d='M18 18h10v28H18zm18 0h10v28H36z' fill='%23f8fafc'/%3E%3C/svg%3E"
+  />
   <style>
     :root {
-      --bg-start: #0f172a;
-      --bg-end: #1e293b;
-      --accent: #38bdf8;
-      --card-bg: rgba(15, 23, 42, 0.85);
-      --border: rgba(148, 163, 184, 0.3);
-      --text: #e2e8f0;
-      --muted: #94a3b8;
+      --bg: #f4f7fb;
+      --bg-muted: #e9eef6;
+      --panel: rgba(255, 255, 255, 0.92);
+      --panel-strong: #ffffff;
+      --line: #d9e2ef;
+      --line-strong: #c6d2e3;
+      --text: #162033;
+      --muted: #60718d;
+      --accent: #2251cc;
+      --accent-soft: rgba(34, 81, 204, 0.1);
+      --success: #16825d;
+      --success-soft: rgba(22, 130, 93, 0.12);
+      --warn: #b86800;
+      --warn-soft: rgba(184, 104, 0, 0.12);
+      --danger: #cb3a31;
+      --danger-soft: rgba(203, 58, 49, 0.12);
+      --shadow: 0 18px 45px rgba(27, 39, 72, 0.08);
+      --radius-xl: 24px;
+      --radius-lg: 18px;
+      --radius-md: 14px;
+      --radius-sm: 10px;
+      --mono: "IBM Plex Mono", "SFMono-Regular", ui-monospace, monospace;
+      --sans: "IBM Plex Sans", "Avenir Next", "Segoe UI", sans-serif;
     }
+
     * {
       box-sizing: border-box;
     }
+
     body {
       margin: 0;
       min-height: 100vh;
-      font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
-      background: radial-gradient(circle at top, rgba(56, 189, 248, 0.15), transparent 45%),
-        linear-gradient(135deg, var(--bg-start), var(--bg-end));
+      background:
+        radial-gradient(circle at top left, rgba(34, 81, 204, 0.12), transparent 30%),
+        radial-gradient(circle at top right, rgba(22, 130, 93, 0.08), transparent 22%),
+        linear-gradient(180deg, #f9fbfe 0%, var(--bg) 100%);
       color: var(--text);
-      display: flex;
-      flex-direction: column;
+      font-family: var(--sans);
     }
-    header {
-      padding: 1.5rem;
-      border-bottom: 1px solid var(--border);
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(148, 163, 184, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(148, 163, 184, 0.05) 1px, transparent 1px);
+      background-size: 32px 32px;
+      opacity: 0.45;
+    }
+
+    .app-shell {
+      position: relative;
+      max-width: 1480px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-xl);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    .topbar {
       display: flex;
       justify-content: space-between;
+      gap: 24px;
+      align-items: flex-start;
+      padding: 22px 24px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
       align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
     }
-    header h1 {
+
+    .headline {
+      margin: 14px 0 6px;
+      font-size: clamp(30px, 4vw, 42px);
+      line-height: 1;
+      letter-spacing: -0.04em;
+      font-weight: 700;
+    }
+
+    .subheadline {
       margin: 0;
-      font-size: 1.75rem;
-      letter-spacing: 0.02em;
-    }
-    header time {
+      max-width: 60ch;
+      font-size: 14px;
+      line-height: 1.6;
       color: var(--muted);
-      font-size: 0.95rem;
     }
-    main {
-      flex: 1;
-      padding: 1.5rem;
+
+    .brand-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .controls {
       display: grid;
-      gap: 1.5rem;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 14px;
+      justify-items: end;
+      min-width: 360px;
     }
-    .card {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 1rem;
-      padding: 1.5rem;
-      box-shadow: 0 20px 60px rgba(2, 6, 23, 0.4);
-      min-height: 200px;
+
+    .controls-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .segmented {
+      display: inline-flex;
+      gap: 6px;
+      padding: 6px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #f8fbff;
+    }
+
+    button {
+      appearance: none;
+      border: 0;
+      border-radius: 999px;
+      padding: 10px 14px;
+      cursor: pointer;
+      font: inherit;
+      transition: transform 0.12s ease, background 0.12s ease, color 0.12s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+    }
+
+    .segmented button {
+      background: transparent;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .segmented button.active {
+      background: #0f172a;
+      color: #fff;
+      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.18);
+    }
+
+    .primary-action {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .meta-strip {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .meta-pill,
+    .tone-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: #fff;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .tone-pill strong,
+    .meta-pill strong {
+      color: var(--text);
+    }
+
+    .notice {
+      margin-top: 16px;
+      padding: 14px 16px;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--line);
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      background: #fff;
+    }
+
+    .notice.visible {
+      display: flex;
+    }
+
+    .notice.notice-success {
+      border-color: rgba(22, 130, 93, 0.18);
+      background: linear-gradient(90deg, rgba(22, 130, 93, 0.08), rgba(255, 255, 255, 0.95));
+    }
+
+    .notice.notice-warn {
+      border-color: rgba(184, 104, 0, 0.18);
+      background: linear-gradient(90deg, rgba(184, 104, 0, 0.08), rgba(255, 255, 255, 0.95));
+    }
+
+    .notice.notice-danger {
+      border-color: rgba(203, 58, 49, 0.18);
+      background: linear-gradient(90deg, rgba(203, 58, 49, 0.08), rgba(255, 255, 255, 0.95));
+    }
+
+    .notice-title {
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .notice-copy {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .overview-grid {
+      margin-top: 18px;
+      display: grid;
+      gap: 14px;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+
+    .overview-card {
+      padding: 18px;
+      min-height: 136px;
       display: flex;
       flex-direction: column;
-      gap: 1rem;
+      justify-content: space-between;
     }
-    .card h2 {
-      margin: 0;
-      font-size: 1.2rem;
-      color: var(--accent);
+
+    .overview-label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      font-weight: 700;
     }
-    .card pre {
-      background: rgba(226, 232, 240, 0.05);
-      padding: 1rem;
-      border-radius: 0.75rem;
-      overflow: auto;
-      margin: 0;
-      font-size: 0.9rem;
+
+    .overview-value {
+      margin-top: 18px;
+      font-size: clamp(24px, 3vw, 34px);
+      line-height: 1;
+      font-weight: 700;
+      letter-spacing: -0.04em;
+    }
+
+    .overview-meta {
+      margin-top: 12px;
+      font-size: 13px;
       color: var(--muted);
     }
-    .list {
-      flex: 1;
+
+    .main-grid {
+      margin-top: 18px;
       display: grid;
-      gap: 0.75rem;
+      gap: 18px;
+      grid-template-columns: minmax(0, 1.55fr) minmax(360px, 0.95fr);
+      align-items: start;
     }
-    .item {
+
+    .trend-strip {
+      margin-top: 18px;
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 0.5rem;
-      padding: 0.75rem;
-      border-radius: 0.75rem;
-      border: 1px solid rgba(148, 163, 184, 0.15);
-      background: rgba(15, 23, 42, 0.5);
+      gap: 14px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
     }
-    .item span {
-      font-size: 0.85rem;
+
+    .trend-card {
+      padding: 18px;
+      min-height: 170px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .trend-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: baseline;
+    }
+
+    .trend-label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .trend-value {
+      font-size: 26px;
+      line-height: 1;
+      font-weight: 700;
+      letter-spacing: -0.04em;
+    }
+
+    .trend-meta {
+      font-size: 12px;
       color: var(--muted);
     }
-    .item strong {
-      color: #f8fafc;
-      font-size: 0.95rem;
+
+    .sparkline {
+      width: 100%;
+      height: 70px;
+      display: block;
+    }
+
+    .sparkline path.line {
+      fill: none;
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .sparkline path.area {
+      opacity: 0.12;
+    }
+
+    .sparkline circle {
+      stroke: #fff;
+      stroke-width: 2;
+    }
+
+    .panel-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      padding: 18px 20px 0;
+    }
+
+    .panel-title {
+      margin: 0;
+      font-size: 18px;
+      line-height: 1.1;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+    }
+
+    .panel-subtitle {
+      margin: 5px 0 0;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .panel-body {
+      padding: 18px 20px 20px;
+    }
+
+    .drawer-summary {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 0 20px 16px;
+    }
+
+    .summary-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: #fbfdff;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .summary-chip strong {
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    .drawer-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 12px;
+      background: #fff;
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 700;
+      border: 1px solid var(--line);
+    }
+
+    .drawer-toggle .chevron {
+      transition: transform 0.12s ease;
+    }
+
+    .drawer-toggle.expanded .chevron {
+      transform: rotate(180deg);
+    }
+
+    .drawer-body.is-collapsed {
+      display: none;
+    }
+
+    .filters-bar {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 16px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: #fbfdff;
+    }
+
+    .filters-bar .segmented {
+      padding: 4px;
+      background: #fff;
+    }
+
+    .filters-bar .segmented button {
+      padding: 8px 12px;
+      font-size: 12px;
+    }
+
+    .filter-group {
+      display: grid;
+      gap: 6px;
+      min-width: 140px;
+    }
+
+    .filter-group label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .filter-group select {
+      appearance: none;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 9px 10px;
+      background: #fff;
+      color: var(--text);
+      font: inherit;
+    }
+
+    .table {
+      display: grid;
+      gap: 10px;
+    }
+
+    .table-header,
+    .table-row {
+      display: grid;
+      grid-template-columns: 1.1fr 1.6fr 0.9fr 0.8fr 0.8fr 0.8fr;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .table-header {
+      padding: 0 12px;
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 700;
+    }
+
+    .table-row {
+      padding: 14px 12px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--line);
+      background: var(--panel-strong);
+    }
+
+    .cell-primary {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .cell-secondary {
+      margin-top: 4px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+
+    .status-success {
+      color: var(--success);
+      background: var(--success-soft);
+      border-color: rgba(22, 130, 93, 0.2);
+    }
+
+    .status-warn {
+      color: var(--warn);
+      background: var(--warn-soft);
+      border-color: rgba(184, 104, 0, 0.22);
+    }
+
+    .status-danger {
+      color: var(--danger);
+      background: var(--danger-soft);
+      border-color: rgba(203, 58, 49, 0.22);
+    }
+
+    .status-neutral {
+      color: var(--muted);
+      background: rgba(96, 113, 141, 0.08);
+      border-color: rgba(96, 113, 141, 0.16);
+    }
+
+    .stack {
+      display: grid;
+      gap: 18px;
+    }
+
+    .upstream-list,
+    .runtime-list,
+    .app-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .upstream-card,
+    .runtime-card,
+    .app-card,
+    .empty-state,
+    .error-state {
+      padding: 15px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--line);
+      background: var(--panel-strong);
+    }
+
+    .upstream-card {
+      display: grid;
+      gap: 12px;
+    }
+
+    .upstream-metrics {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .metric-box {
+      padding: 12px;
+      border-radius: var(--radius-sm);
+      background: #f7faff;
+      border: 1px solid #ebf1f8;
+    }
+
+    .metric-box span {
+      display: block;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+
+    .metric-box strong {
+      display: block;
+      margin-top: 6px;
+      font-size: 14px;
+    }
+
+    .error-copy {
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
       word-break: break-word;
     }
-    button {
-      border: none;
-      background: var(--accent);
-      color: #0f172a;
-      border-radius: 999px;
-      padding: 0.65rem 1.25rem;
-      font-weight: 600;
-      cursor: pointer;
-      align-self: flex-start;
-      transition: transform 0.2s ease;
+
+    .app-row {
+      display: grid;
+      gap: 10px;
     }
-    button:active {
-      transform: scale(0.98);
-    }
-    .lang-switch {
-      display: flex;
-      gap: 0.5rem;
-      align-items: center;
-    }
-    .lang-btn {
-      padding: 0.4rem 0.8rem;
-      font-size: 0.85rem;
-      background: rgba(15, 23, 42, 0.65);
-      border: 1px solid var(--border);
-      color: var(--muted);
-    }
-    .lang-btn.active {
-      background: var(--accent);
-      color: #0f172a;
-      border-color: var(--accent);
-    }
-    .meta {
+
+    .app-topline {
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      gap: 10px;
+      align-items: baseline;
     }
-    .tag {
-      padding: 0.2rem 0.8rem;
+
+    .app-name {
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .share-bar {
+      height: 8px;
       border-radius: 999px;
-      background: rgba(15, 23, 42, 0.65);
-      border: 1px solid var(--border);
-      font-size: 0.85rem;
-      color: var(--muted);
+      background: #edf2f8;
+      overflow: hidden;
     }
-    @media (max-width: 600px) {
-      body {
-        padding-bottom: 1rem;
+
+    .share-fill {
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent), #5c86f2);
+    }
+
+    .app-stats {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .runtime-grid {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .runtime-card code,
+    .runtime-card pre {
+      font-family: var(--mono);
+    }
+
+    details {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: #f9fbfe;
+      overflow: hidden;
+    }
+
+    summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 14px 15px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    summary::-webkit-details-marker {
+      display: none;
+    }
+
+    pre {
+      margin: 0;
+      padding: 0 15px 15px;
+      overflow: auto;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.65;
+    }
+
+    .footer-note {
+      margin-top: 14px;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .empty-state,
+    .error-state {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .error-state {
+      color: var(--danger);
+      border-color: rgba(203, 58, 49, 0.22);
+      background: rgba(255, 244, 243, 0.96);
+    }
+
+    @media (max-width: 1280px) {
+      .overview-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
       }
-      header {
-        flex-direction: column;
-        gap: 0.5rem;
-        align-items: flex-start;
-      }
-      .item {
+
+      .trend-strip {
         grid-template-columns: 1fr;
+      }
+
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 920px) {
+      .topbar {
+        flex-direction: column;
+      }
+
+      .controls {
+        width: 100%;
+        justify-items: start;
+        min-width: 0;
+      }
+
+      .controls-row,
+      .meta-strip {
+        justify-content: flex-start;
+      }
+
+      .filters-bar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .table-header,
+      .table-row {
+        grid-template-columns: 1fr;
+      }
+
+      .table-header {
+        display: none;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .app-shell {
+        padding: 16px;
+      }
+
+      .overview-grid,
+      .trend-strip,
+      .runtime-grid,
+      .upstream-metrics,
+      .app-stats {
+        grid-template-columns: 1fr;
+      }
+
+      .panel-head,
+      .panel-body,
+      .topbar {
+        padding-left: 16px;
+        padding-right: 16px;
       }
     }
   </style>
 </head>
 <body>
-  <header>
-    <div>
-      <h1>LLM Hub</h1>
-      <div class="muted" data-i18n="subtitle">统一网关仪表板</div>
-    </div>
-    <div style="display: flex; gap: 1rem; align-items: center;">
-      <div class="lang-switch">
-        <button class="lang-btn" data-lang="zh">中文</button>
-        <button class="lang-btn" data-lang="en">English</button>
+  <div class="app-shell">
+    <header class="panel topbar">
+      <div>
+        <div class="eyebrow" data-i18n="eyebrow">LLM Hub Control</div>
+        <div class="brand-row">
+          <h1 class="headline" data-i18n="headline">Gateway Console</h1>
+          <span id="gateway-tone-pill" class="tone-pill"><strong>--</strong></span>
+        </div>
+        <p class="subheadline" data-i18n="subheadline">
+          A bilingual control surface for health, failures, token usage, cost, and failover behavior.
+        </p>
       </div>
-      <time id="current-time"></time>
-    </div>
-  </header>
-  <main>
-    <section class="card" id="summary-card">
-      <div class="meta">
-        <h2 data-i18n="summary">概览</h2>
-        <span class="tag">/api/summary</span>
-      </div>
-      <div class="list" id="summary-list">
-        <div class="item">
-          <span data-i18n="total_requests">总请求数</span>
-          <strong>—</strong>
+      <div class="controls">
+        <div class="controls-row">
+          <div class="segmented" id="hours-control" aria-label="Time window">
+            <button type="button" class="hours-btn" data-hours="1">1h</button>
+            <button type="button" class="hours-btn" data-hours="24">24h</button>
+            <button type="button" class="hours-btn" data-hours="168">7d</button>
+          </div>
+          <div class="segmented" id="language-control" aria-label="Language">
+            <button type="button" class="lang-btn" data-lang="zh">中文</button>
+            <button type="button" class="lang-btn" data-lang="en">EN</button>
+          </div>
+          <button type="button" class="primary-action" id="refresh-button" data-i18n="refresh">Refresh</button>
         </div>
-        <div class="item">
-          <span data-i18n="successful">成功请求</span>
-          <strong>—</strong>
-        </div>
-        <div class="item">
-          <span data-i18n="average_latency">平均延迟 (毫秒)</span>
-          <strong>—</strong>
-        </div>
-        <div class="item">
-          <span data-i18n="total_cost">总成本 (美元)</span>
-          <strong>—</strong>
+        <div class="meta-strip">
+          <span class="meta-pill"><span data-i18n="version">Version</span><strong id="meta-version">--</strong></span>
+          <span class="meta-pill"><span data-i18n="updated">Updated</span><strong id="last-updated">--</strong></span>
+          <span class="meta-pill"><span data-i18n="refresh_mode">Refresh</span><strong id="refresh-mode">15s</strong></span>
         </div>
       </div>
-      <button id="refresh-summary" data-i18n="refresh">刷新</button>
-    </section>
+    </header>
 
-    <section class="card" id="requests-card">
-      <div class="meta">
-        <h2 data-i18n="recent_requests">最近请求</h2>
-        <span class="tag">/api/requests</span>
-      </div>
-      <div class="list" id="requests-list">
-        <div class="item">
-          <span data-i18n="loading">加载中...</span>
-          <strong></strong>
-        </div>
+    <section id="notice" class="notice">
+      <div>
+        <div class="notice-title" id="notice-title">--</div>
+        <div class="notice-copy" id="notice-copy">--</div>
       </div>
     </section>
 
-    <section class="card" id="upstreams-card">
-      <div class="meta">
-        <h2 data-i18n="upstreams">上游服务</h2>
-        <span class="tag">/api/upstreams</span>
-      </div>
-      <div class="list" id="upstreams-list"></div>
-    </section>
+    <section id="overview-grid" class="overview-grid"></section>
+    <section id="trend-strip" class="trend-strip"></section>
 
-    <section class="card" id="config-card">
-      <div class="meta">
-        <h2 data-i18n="gateway_config">网关配置</h2>
-        <span class="tag">/api/config</span>
-      </div>
-      <pre id="config-block" data-i18n="loading_config">加载配置中…</pre>
+    <section class="main-grid">
+      <article class="panel">
+        <div class="panel-head">
+          <div>
+            <h2 class="panel-title" data-i18n="requests_title">Recent activity</h2>
+            <p class="panel-subtitle" data-i18n="requests_subtitle">
+              The latest requests with protocol, route mode, tokens, latency, and upstream path.
+            </p>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="filters-bar">
+            <div class="segmented" id="status-filter-control" aria-label="Request status">
+              <button type="button" class="status-filter-btn" data-status="all" data-i18n="filter_all">All</button>
+              <button type="button" class="status-filter-btn" data-status="failed" data-i18n="filter_failed">Failed</button>
+            </div>
+            <div class="filter-group">
+              <label for="filter-app" data-i18n="filter_app">App</label>
+              <select id="filter-app"></select>
+            </div>
+            <div class="filter-group">
+              <label for="filter-upstream" data-i18n="filter_upstream">Upstream</label>
+              <select id="filter-upstream"></select>
+            </div>
+            <div class="filter-group">
+              <label for="filter-route" data-i18n="filter_route">Route</label>
+              <select id="filter-route"></select>
+            </div>
+          </div>
+          <div class="table-header">
+            <div data-i18n="table_time">Time</div>
+            <div data-i18n="table_request">Request</div>
+            <div data-i18n="table_status">Status</div>
+            <div data-i18n="table_upstream">Upstream</div>
+            <div data-i18n="table_tokens">Tokens</div>
+            <div data-i18n="table_latency">Latency</div>
+          </div>
+          <div id="requests-table" class="table"></div>
+        </div>
+      </article>
+
+      <aside class="stack">
+        <article class="panel">
+          <div class="panel-head">
+            <div>
+              <h2 class="panel-title" data-i18n="upstreams_title">Upstreams</h2>
+              <p class="panel-subtitle" data-i18n="upstreams_subtitle">
+                Circuit state, cooldown, latency, failures, and last error.
+              </p>
+            </div>
+            <button type="button" id="upstreams-drawer-toggle" class="drawer-toggle">
+              <span id="upstreams-drawer-toggle-label">Expand</span>
+              <span class="chevron">⌄</span>
+            </button>
+          </div>
+          <div id="upstreams-drawer-summary" class="drawer-summary"></div>
+          <div id="upstreams-drawer-body" class="panel-body drawer-body is-collapsed">
+            <div id="upstreams-list" class="upstream-list"></div>
+          </div>
+        </article>
+
+        <article class="panel">
+          <div class="panel-head">
+            <div>
+              <h2 class="panel-title" data-i18n="apps_title">App consumption</h2>
+              <p class="panel-subtitle" data-i18n="apps_subtitle">
+                Request and token share grouped by client app.
+              </p>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div id="apps-list" class="app-list"></div>
+          </div>
+        </article>
+
+        <article class="panel">
+          <div class="panel-head">
+            <div>
+              <h2 class="panel-title" data-i18n="runtime_title">Runtime</h2>
+              <p class="panel-subtitle" data-i18n="runtime_subtitle">
+                Build identity, startup time, config location, and redacted config.
+              </p>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div id="runtime-grid" class="runtime-grid"></div>
+            <div class="footer-note">
+              <span><span data-i18n="build">Build</span>: <strong id="build-label">--</strong></span>
+              <span><span data-i18n="started">Started</span>: <strong id="started-at">--</strong></span>
+            </div>
+            <div style="margin-top: 14px;">
+              <details>
+                <summary data-i18n="config_expand">Show redacted config JSON</summary>
+                <pre id="config-block"></pre>
+              </details>
+            </div>
+          </div>
+        </article>
+      </aside>
     </section>
-  </main>
+  </div>
+
   <script>
     const translations = {
       zh: {
-        subtitle: '统一网关仪表板',
-        summary: '概览',
-        total_requests: '总请求数',
-        successful: '成功请求',
-        average_latency: '平均延迟 (毫秒)',
-        total_cost: '总成本 (美元)',
+        page_title: 'LLM Hub 控制台',
+        eyebrow: 'LLM Hub 控制台',
+        headline: 'Gateway Console',
+        subheadline: '面向运维的双语控制台，用于查看健康状态、失败、token 用量、成本和故障切换。',
         refresh: '刷新',
-        recent_requests: '最近请求',
-        loading: '加载中...',
-        upstreams: '上游服务',
-        gateway_config: '网关配置',
-        loading_config: '加载配置中…',
-        no_recent_requests: '暂无最近请求',
-        no_upstreams: '未配置上游服务',
-        app: '应用',
-        port: '端口',
-        upstream: '上游',
-        tokens: 'tokens',
-        cooldown: '冷却时间',
+        version: '版本',
+        updated: '更新时间',
+        refresh_mode: '刷新频率',
+        requests_title: '最近活动',
+        requests_subtitle: '展示最近请求的协议、路由模式、token、延迟和上游路径。',
+        upstreams_title: '上游状态',
+        upstreams_subtitle: '查看熔断状态、冷却窗口、延迟、失败次数和最近错误。',
+        apps_title: '应用消耗',
+        apps_subtitle: '按客户端应用聚合请求量、token 和成本占比。',
+        runtime_title: '运行态',
+        runtime_subtitle: '显示当前构建标识、启动时间、配置位置和脱敏配置。',
+        build: '构建',
+        started: '启动于',
+        config_expand: '展开脱敏配置 JSON',
+        hours_control: '时间窗口',
+        language_control: '语言',
+        status_filter_control: '请求状态',
+        table_time: '时间',
+        table_request: '请求',
+        table_status: '状态',
+        table_upstream: '上游',
+        table_tokens: 'Token',
+        table_latency: '延迟',
+        gateway_status: '网关状态',
+        total_requests: '请求总数',
+        success_rate: '成功率',
+        average_latency: '平均延迟',
+        total_tokens: '总 Token',
+        total_cost: '总成本',
+        active_upstreams: '可用上游',
+        failed_requests: '失败请求',
+        prompt_completion: '输入 / 输出',
+        request_window: '时间窗口',
+        healthy: '健康',
+        degraded: '降级',
+        attention: '需要关注',
+        all_systems_nominal: '所有上游正常，当前窗口内没有失败请求。',
+        monitoring_issue: '监控提醒',
+        healthy_summary: '系统稳定',
         ready: '就绪',
-        failures: '失败次数'
+        cooldown: '冷却',
+        failures: '失败次数',
+        avg_latency_short: '平均延迟',
+        last_error: '最近错误',
+        last_success: '最近成功',
+        route_passthrough: '直通',
+        route_transform: '转换',
+        route_failed: '失败',
+        req_success: '成功',
+        req_failed: '失败',
+        state_closed: '关闭',
+        state_open: '打开',
+        state_half_open: '半开',
+        no_requests: '还没有最近请求。',
+        no_matching_requests: '当前筛选条件下没有匹配的请求。',
+        no_upstreams: '没有可展示的上游状态。',
+        no_apps: '当前窗口内没有应用请求。',
+        loading: '加载中…',
+        config_path: '配置路径',
+        dashboard_path: '面板文件',
+        database_type: '数据库',
+        listener_count: '监听端口',
+        upstream_count: '上游数量',
+        token_share: 'Token 占比',
+        trend_requests: '请求趋势',
+        trend_tokens: 'Token 趋势',
+        trend_cost: '成本趋势',
+        trend_requests_meta: '最近窗口内的请求变化',
+        trend_tokens_meta: '最近窗口内的 token 变化',
+        trend_cost_meta: '最近窗口内的成本变化',
+        filter_all: '全部',
+        filter_failed: '仅失败',
+        filter_app: '应用',
+        filter_upstream: '上游',
+        filter_route: '路径',
+        upstream_drawer_open: '展开详情',
+        upstream_drawer_close: '收起详情',
+        upstream_attention: '需关注上游',
+        upstream_summary_tokens: '渠道 Token',
+        upstream_summary_cost: '渠道成本',
+        filter_all_apps: '所有应用',
+        filter_all_upstreams: '所有上游',
+        filter_all_routes: '所有路径',
+        upstream_requests: '请求数',
+        upstream_tokens: 'Token',
+        upstream_cost: '成本',
+        upstream_success_rate: '成功率',
+        requests_unit: '请求',
+        tokens_unit: 'tokens',
+        ms_unit: '毫秒',
+        usd_unit: '美元',
+        refresh_every: '每 15 秒自动刷新',
+        unknown: '未知',
       },
       en: {
-        subtitle: 'Unified Gateway dashboard',
-        summary: 'Summary',
-        total_requests: 'Total requests',
-        successful: 'Successful requests',
-        average_latency: 'Average latency (ms)',
-        total_cost: 'Total cost (USD)',
+        page_title: 'LLM Hub Console',
+        eyebrow: 'LLM Hub Control',
+        headline: 'Gateway Console',
+        subheadline: 'A bilingual operations console for health, failures, token usage, cost, and failover behavior.',
         refresh: 'Refresh',
-        recent_requests: 'Recent requests',
-        loading: 'Loading...',
-        upstreams: 'Upstreams',
-        gateway_config: 'Gateway config',
-        loading_config: 'Loading configuration…',
-        no_recent_requests: 'No recent requests',
-        no_upstreams: 'No upstreams configured',
-        app: 'App',
-        port: 'port',
-        upstream: 'Upstream',
-        tokens: 'tokens',
+        version: 'Version',
+        updated: 'Updated',
+        refresh_mode: 'Refresh',
+        requests_title: 'Recent activity',
+        requests_subtitle: 'The latest requests with protocol, route mode, tokens, latency, and upstream path.',
+        upstreams_title: 'Upstreams',
+        upstreams_subtitle: 'Circuit state, cooldown, latency, failures, and last error.',
+        apps_title: 'App consumption',
+        apps_subtitle: 'Request, token, and cost share grouped by client app.',
+        runtime_title: 'Runtime',
+        runtime_subtitle: 'Build identity, startup time, config location, and redacted config.',
+        build: 'Build',
+        started: 'Started',
+        config_expand: 'Show redacted config JSON',
+        hours_control: 'Time window',
+        language_control: 'Language',
+        status_filter_control: 'Request status',
+        table_time: 'Time',
+        table_request: 'Request',
+        table_status: 'Status',
+        table_upstream: 'Upstream',
+        table_tokens: 'Tokens',
+        table_latency: 'Latency',
+        gateway_status: 'Gateway status',
+        total_requests: 'Total requests',
+        success_rate: 'Success rate',
+        average_latency: 'Avg latency',
+        total_tokens: 'Total tokens',
+        total_cost: 'Total cost',
+        active_upstreams: 'Active upstreams',
+        failed_requests: 'Failed requests',
+        prompt_completion: 'Prompt / completion',
+        request_window: 'Window',
+        healthy: 'Healthy',
+        degraded: 'Degraded',
+        attention: 'Attention',
+        all_systems_nominal: 'All upstreams are available and there are no recent failures.',
+        monitoring_issue: 'Operational notice',
+        healthy_summary: 'System stable',
+        ready: 'Ready',
         cooldown: 'Cooldown',
-        ready: 'ready',
-        failures: 'Failures'
-      }
+        failures: 'Failures',
+        avg_latency_short: 'Avg latency',
+        last_error: 'Last error',
+        last_success: 'Last success',
+        route_passthrough: 'Passthrough',
+        route_transform: 'Transform',
+        route_failed: 'Failed',
+        req_success: 'Success',
+        req_failed: 'Failed',
+        state_closed: 'Closed',
+        state_open: 'Open',
+        state_half_open: 'Half-open',
+        no_requests: 'No recent requests yet.',
+        no_matching_requests: 'No requests match the current filters.',
+        no_upstreams: 'No upstream state available.',
+        no_apps: 'No app traffic in the selected window.',
+        loading: 'Loading…',
+        config_path: 'Config path',
+        dashboard_path: 'Dashboard path',
+        database_type: 'Database',
+        listener_count: 'Listeners',
+        upstream_count: 'Upstreams',
+        token_share: 'Token share',
+        trend_requests: 'Request trend',
+        trend_tokens: 'Token trend',
+        trend_cost: 'Cost trend',
+        trend_requests_meta: 'Recent request volume over time',
+        trend_tokens_meta: 'Recent token usage over time',
+        trend_cost_meta: 'Recent cost movement over time',
+        filter_all: 'All',
+        filter_failed: 'Failed only',
+        filter_app: 'App',
+        filter_upstream: 'Upstream',
+        filter_route: 'Route',
+        upstream_drawer_open: 'Show details',
+        upstream_drawer_close: 'Hide details',
+        upstream_attention: 'Need attention',
+        upstream_summary_tokens: 'Upstream tokens',
+        upstream_summary_cost: 'Upstream cost',
+        filter_all_apps: 'All apps',
+        filter_all_upstreams: 'All upstreams',
+        filter_all_routes: 'All routes',
+        upstream_requests: 'Requests',
+        upstream_tokens: 'Tokens',
+        upstream_cost: 'Cost',
+        upstream_success_rate: 'Success rate',
+        requests_unit: 'requests',
+        tokens_unit: 'tokens',
+        ms_unit: 'ms',
+        usd_unit: 'USD',
+        refresh_every: 'Auto refresh every 15s',
+        unknown: 'Unknown',
+      },
     };
 
-    let currentLang = localStorage.getItem('lang') || 'zh';
-
-    function setLanguage(lang) {
-      currentLang = lang;
-      localStorage.setItem('lang', lang);
-      document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
-
-      // Update all elements with data-i18n
-      document.querySelectorAll('[data-i18n]').forEach(el => {
-        const key = el.getAttribute('data-i18n');
-        if (translations[lang][key]) {
-          el.textContent = translations[lang][key];
-        }
-      });
-
-      // Update language buttons
-      document.querySelectorAll('.lang-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.getAttribute('data-lang') === lang);
-      });
-
-      // Refresh data to update dynamic content
-      refreshAll();
-    }
-
-    // Language switcher
-    document.querySelectorAll('.lang-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        setLanguage(btn.getAttribute('data-lang'));
-      });
-    });
-
-    const endpoints = {
-      summary: '/api/summary',
-      requests: '/api/requests',
-      upstreams: '/api/upstreams',
-      config: '/api/config'
+    const state = {
+      lang: detectInitialLanguage(),
+      hours: localStorage.getItem('dashboard-hours') || '24',
+      filters: {
+        status: 'all',
+        app: 'all',
+        upstream: 'all',
+        route: 'all',
+      },
+      ui: {
+        upstreamsDrawerOpen: localStorage.getItem('upstreams-drawer-open') === 'true',
+      },
+      data: {
+        summary: null,
+        requests: [],
+        upstreams: { memory: [], persisted: [] },
+        config: null,
+        meta: null,
+      },
+      lastUpdated: null,
+      refreshTimer: null,
+      error: null,
     };
 
-    const timeEl = document.getElementById('current-time');
-
-    function updateTime() {
-      timeEl.textContent = new Date().toLocaleString();
-    }
-
-    async function fetchJson(path) {
-      const resp = await fetch(path);
-      if (!resp.ok) {
-        throw new Error(`${path} -> ${resp.status}`);
+    function detectInitialLanguage() {
+      const stored = localStorage.getItem('lang');
+      if (stored === 'zh' || stored === 'en') {
+        return stored;
       }
-      return resp.json();
+      const languages = navigator.languages || [navigator.language || 'en'];
+      return languages.some((language) => String(language).toLowerCase().startsWith('zh')) ? 'zh' : 'en';
     }
 
-    function renderSummary(summary = {}) {
-      const list = document.getElementById('summary-list');
-      const t = translations[currentLang];
-      const items = [
-        { label: t.total_requests, value: summary.total_requests },
-        { label: t.successful, value: summary.successful_requests },
-        { label: t.average_latency, value: summary.average_latency_ms },
-        { label: t.total_cost, value: summary.total_cost_usd?.toFixed ? summary.total_cost_usd.toFixed(6) : summary.total_cost_usd }
+    function t(key) {
+      return translations[state.lang][key] || key;
+    }
+
+    function formatNumber(value, digits = 0) {
+      if (value === null || value === undefined || Number.isNaN(Number(value))) {
+        return '—';
+      }
+      return new Intl.NumberFormat(state.lang === 'zh' ? 'zh-CN' : 'en-US', {
+        maximumFractionDigits: digits,
+        minimumFractionDigits: digits,
+      }).format(Number(value));
+    }
+
+    function formatCurrency(value) {
+      if (value === null || value === undefined || Number.isNaN(Number(value))) {
+        return '—';
+      }
+      return new Intl.NumberFormat(state.lang === 'zh' ? 'zh-CN' : 'en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 4,
+        maximumFractionDigits: 6,
+      }).format(Number(value));
+    }
+
+    function formatPercent(numerator, denominator) {
+      if (!denominator) {
+        return '—';
+      }
+      return `${((Number(numerator || 0) / Number(denominator || 0)) * 100).toFixed(1)}%`;
+    }
+
+    function formatTokenCount(value) {
+      const numeric = Number(value || 0);
+      if (!Number.isFinite(numeric)) {
+        return '—';
+      }
+      if (numeric >= 1000000) {
+        return `${(numeric / 1000000).toFixed(2)}M`;
+      }
+      if (numeric >= 10000) {
+        return `${(numeric / 1000).toFixed(numeric >= 100000 ? 0 : 1)}K`;
+      }
+      return formatNumber(numeric);
+    }
+
+    function formatCompactCount(value) {
+      const numeric = Number(value || 0);
+      if (!Number.isFinite(numeric)) {
+        return '—';
+      }
+      if (numeric >= 1000000) {
+        return `${(numeric / 1000000).toFixed(2)}M`;
+      }
+      if (numeric >= 1000) {
+        return `${(numeric / 1000).toFixed(numeric >= 10000 ? 0 : 1)}K`;
+      }
+      return formatNumber(numeric);
+    }
+
+    function formatTimestamp(value) {
+      if (!value) {
+        return '—';
+      }
+      return new Date(Number(value)).toLocaleString(state.lang === 'zh' ? 'zh-CN' : 'en-US');
+    }
+
+    function formatRelativeCooldown(value) {
+      if (!value) {
+        return t('ready');
+      }
+      const diff = Number(value) - Date.now();
+      if (diff <= 0) {
+        return t('ready');
+      }
+      const minutes = Math.ceil(diff / 60000);
+      return `${minutes}m`;
+    }
+
+    function statusClass(kind) {
+      if (kind === 'success') return 'status-success';
+      if (kind === 'warn') return 'status-warn';
+      if (kind === 'danger') return 'status-danger';
+      return 'status-neutral';
+    }
+
+    function optionMarkup(value, label, selected) {
+      return `<option value="${value}" ${selected ? 'selected' : ''}>${label}</option>`;
+    }
+
+    function sparklinePath(values, width = 280, height = 70, padding = 6) {
+      if (!values.length) {
+        return null;
+      }
+      const max = Math.max(...values);
+      const min = Math.min(...values);
+      const range = max - min || 1;
+      const usableWidth = width - padding * 2;
+      const usableHeight = height - padding * 2;
+
+      const points = values.map((value, index) => {
+        const x = padding + (usableWidth * index) / Math.max(values.length - 1, 1);
+        const normalized = (value - min) / range;
+        const y = height - padding - normalized * usableHeight;
+        return [x, y];
+      });
+
+      const line = points.map(([x, y], index) => `${index === 0 ? 'M' : 'L'} ${x} ${y}`).join(' ');
+      const area = `${line} L ${points[points.length - 1][0]} ${height - padding} L ${points[0][0]} ${height - padding} Z`;
+      const lastPoint = points[points.length - 1];
+      return { line, area, lastPoint };
+    }
+
+    function routeModeLabel(value) {
+      if (value === 'passthrough') return t('route_passthrough');
+      if (value === 'transform') return t('route_transform');
+      if (value === 'failed') return t('route_failed');
+      return value || t('unknown');
+    }
+
+    function circuitStateLabel(value) {
+      if (value === 'closed') return t('state_closed');
+      if (value === 'open') return t('state_open');
+      if (value === 'half_open') return t('state_half_open');
+      return value || t('unknown');
+    }
+
+    function requestStatusMeta(row) {
+      return row.success ? { label: t('req_success'), tone: 'success' } : { label: t('req_failed'), tone: 'danger' };
+    }
+
+    function deriveGatewayTone(summary, upstreams) {
+      const failedRequests = Number(summary?.failed_requests || 0);
+      const openCount = upstreams.filter((item) => item.circuit_state === 'open' || item.in_cooldown).length;
+      if (openCount > 0) {
+        return { label: t('attention'), tone: 'danger' };
+      }
+      if (failedRequests > 0) {
+        return { label: t('degraded'), tone: 'warn' };
+      }
+      return { label: t('healthy'), tone: 'success' };
+    }
+
+    function deriveNotice(summary, upstreams) {
+      const failedRequests = Number(summary?.failed_requests || 0);
+      const openCount = upstreams.filter((item) => item.circuit_state === 'open' || item.in_cooldown).length;
+      if (openCount > 0) {
+        return {
+          tone: 'danger',
+          title: t('monitoring_issue'),
+          copy:
+            state.lang === 'zh'
+              ? `有 ${formatNumber(openCount)} 个上游处于熔断或冷却中`
+              : openCount === 1
+                ? 'There is 1 upstream in an open or cooldown state.'
+                : `There are ${formatNumber(openCount)} upstreams in an open or cooldown state.`,
+        };
+      }
+      if (failedRequests > 0) {
+        return {
+          tone: 'warn',
+          title: t('monitoring_issue'),
+          copy:
+            state.lang === 'zh'
+              ? `当前窗口内有 ${formatNumber(failedRequests)} 个失败请求`
+              : failedRequests === 1
+                ? 'There is 1 failed request in the selected time window.'
+                : `There are ${formatNumber(failedRequests)} failed requests in the selected time window.`,
+        };
+      }
+      return {
+        tone: 'success',
+        title: t('healthy_summary'),
+        copy: t('all_systems_nominal'),
+      };
+    }
+
+    async function fetchJson(url) {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`${url} -> ${response.status}`);
+      }
+      return response.json();
+    }
+
+    function renderStaticCopy() {
+      document.documentElement.lang = state.lang === 'zh' ? 'zh-CN' : 'en';
+      document.title = t('page_title');
+      document.querySelectorAll('[data-i18n]').forEach((node) => {
+        node.textContent = t(node.dataset.i18n);
+      });
+
+      document.querySelectorAll('.lang-btn').forEach((button) => {
+        button.classList.toggle('active', button.dataset.lang === state.lang);
+      });
+
+      document.querySelectorAll('.hours-btn').forEach((button) => {
+        button.classList.toggle('active', button.dataset.hours === state.hours);
+      });
+
+      document.querySelectorAll('.status-filter-btn').forEach((button) => {
+        button.classList.toggle('active', button.dataset.status === state.filters.status);
+      });
+
+      document.getElementById('hours-control').setAttribute('aria-label', t('hours_control'));
+      document.getElementById('language-control').setAttribute('aria-label', t('language_control'));
+      document.getElementById('status-filter-control').setAttribute('aria-label', t('status_filter_control'));
+      document.getElementById('refresh-mode').textContent = t('refresh_every');
+      document.getElementById('upstreams-drawer-toggle-label').textContent = state.ui.upstreamsDrawerOpen
+        ? t('upstream_drawer_close')
+        : t('upstream_drawer_open');
+      document.getElementById('upstreams-drawer-toggle').classList.toggle('expanded', state.ui.upstreamsDrawerOpen);
+      document.getElementById('upstreams-drawer-toggle').setAttribute('aria-expanded', String(state.ui.upstreamsDrawerOpen));
+    }
+
+    function renderNotice() {
+      const notice = deriveNotice(state.data.summary || {}, state.data.upstreams?.memory || []);
+      const root = document.getElementById('notice');
+      root.className = `notice visible notice-${notice.tone}`;
+      document.getElementById('notice-title').textContent = notice.title;
+      document.getElementById('notice-copy').textContent = notice.copy;
+    }
+
+    function renderTrendStrip(summary) {
+      const root = document.getElementById('trend-strip');
+      const trend = summary?.trend || [];
+      const cards = [
+        {
+          key: 'requests',
+          label: t('trend_requests'),
+          meta: t('trend_requests_meta'),
+          value: formatCompactCount(summary?.total_requests || 0),
+          color: '#2251cc',
+          area: 'rgba(34, 81, 204, 0.24)',
+          values: trend.map((item) => Number(item.total_requests || 0)),
+        },
+        {
+          key: 'tokens',
+          label: t('trend_tokens'),
+          meta: t('trend_tokens_meta'),
+          value: formatTokenCount(summary?.tokens_total || 0),
+          color: '#16825d',
+          area: 'rgba(22, 130, 93, 0.24)',
+          values: trend.map((item) => Number(item.tokens_total || 0)),
+        },
+        {
+          key: 'cost',
+          label: t('trend_cost'),
+          meta: t('trend_cost_meta'),
+          value: formatCurrency(summary?.total_cost_usd || 0),
+          color: '#b86800',
+          area: 'rgba(184, 104, 0, 0.24)',
+          values: trend.map((item) => Number(item.total_cost_usd || 0)),
+        },
       ];
-      list.innerHTML = '';
-      items.forEach((entry) => {
-        const div = document.createElement('div');
-        div.className = 'item';
-        div.innerHTML = `<span>${entry.label}</span><strong>${entry.value ?? '—'}</strong>`;
-        list.appendChild(div);
+
+      root.innerHTML = '';
+      cards.forEach((card) => {
+        const path = sparklinePath(card.values);
+        const article = document.createElement('article');
+        article.className = 'panel trend-card';
+        article.innerHTML = `
+          <div class="trend-head">
+            <div>
+              <div class="trend-label">${card.label}</div>
+              <div class="trend-value">${card.value}</div>
+            </div>
+          </div>
+          <svg class="sparkline" viewBox="0 0 280 70" preserveAspectRatio="none">
+            ${
+              path
+                ? `
+                  <path class="area" d="${path.area}" fill="${card.area}"></path>
+                  <path class="line" d="${path.line}" stroke="${card.color}"></path>
+                  <circle cx="${path.lastPoint[0]}" cy="${path.lastPoint[1]}" r="4.5" fill="${card.color}"></circle>
+                `
+                : ''
+            }
+          </svg>
+          <div class="trend-meta">${card.meta}</div>
+        `;
+        root.appendChild(article);
       });
     }
 
-    function renderRequests(data = []) {
-      const list = document.getElementById('requests-list');
-      const t = translations[currentLang];
-      list.innerHTML = '';
-      if (!data.length) {
-        list.innerHTML = `<div class="item"><span>${t.no_recent_requests}</span></div>`;
+    function populateFilters(summary) {
+      const appSelect = document.getElementById('filter-app');
+      const upstreamSelect = document.getElementById('filter-upstream');
+      const routeSelect = document.getElementById('filter-route');
+
+      const appValues = [...new Set((summary?.apps || []).map((row) => row.app_name).filter(Boolean))].sort();
+      const upstreamValues = [...new Set((summary?.upstreams || []).map((row) => row.upstream_id).filter(Boolean))].sort();
+      const routeValues = ['passthrough', 'transform', 'failed'];
+
+      if (state.filters.app !== 'all' && !appValues.includes(state.filters.app)) {
+        state.filters.app = 'all';
+      }
+      if (state.filters.upstream !== 'all' && !upstreamValues.includes(state.filters.upstream)) {
+        state.filters.upstream = 'all';
+      }
+      if (state.filters.route !== 'all' && !routeValues.includes(state.filters.route)) {
+        state.filters.route = 'all';
+      }
+
+      appSelect.innerHTML = [
+        optionMarkup('all', t('filter_all_apps'), state.filters.app === 'all'),
+        ...appValues.map((value) => optionMarkup(value, value, state.filters.app === value)),
+      ].join('');
+
+      upstreamSelect.innerHTML = [
+        optionMarkup('all', t('filter_all_upstreams'), state.filters.upstream === 'all'),
+        ...upstreamValues.map((value) => optionMarkup(value, value, state.filters.upstream === value)),
+      ].join('');
+
+      routeSelect.innerHTML = [
+        optionMarkup('all', t('filter_all_routes'), state.filters.route === 'all'),
+        ...routeValues.map((value) => optionMarkup(value, routeModeLabel(value), state.filters.route === value)),
+      ].join('');
+    }
+
+    function renderUpstreamDrawerSummary(summary, upstreams) {
+      const root = document.getElementById('upstreams-drawer-summary');
+      const body = document.getElementById('upstreams-drawer-body');
+      const activeUpstreams = upstreams.filter((item) => item.circuit_state !== 'open' && !item.in_cooldown).length;
+      const attentionCount = upstreams.filter((item) => item.circuit_state !== 'closed' || item.in_cooldown).length;
+
+      root.innerHTML = [
+        `<span class="summary-chip"><strong>${formatNumber(upstreams.length)}</strong> ${t('upstream_count')}</span>`,
+        `<span class="summary-chip"><strong>${formatNumber(activeUpstreams)}</strong> ${t('active_upstreams')}</span>`,
+        `<span class="summary-chip"><strong>${formatNumber(attentionCount)}</strong> ${t('upstream_attention')}</span>`,
+        `<span class="summary-chip"><strong>${formatTokenCount(summary?.upstreams?.reduce((sum, item) => sum + Number(item.tokens_total || 0), 0) || 0)}</strong> ${t('upstream_summary_tokens')}</span>`,
+        `<span class="summary-chip"><strong>${formatCurrency(summary?.upstreams?.reduce((sum, item) => sum + Number(item.total_cost_usd || 0), 0) || 0)}</strong> ${t('upstream_summary_cost')}</span>`,
+      ].join('');
+
+      body.classList.toggle('is-collapsed', !state.ui.upstreamsDrawerOpen);
+    }
+
+    function renderOverview(summary, upstreams) {
+      const root = document.getElementById('overview-grid');
+      const tone = deriveGatewayTone(summary, upstreams);
+      const activeUpstreams = upstreams.filter((item) => item.circuit_state !== 'open' && !item.in_cooldown).length;
+      const totalUpstreams = upstreams.length;
+      const cards = [
+        {
+          label: t('gateway_status'),
+          value: tone.label,
+          meta: `${formatNumber(activeUpstreams)} / ${formatNumber(totalUpstreams)} ${t('active_upstreams')}`,
+        },
+        {
+          label: t('total_requests'),
+          value: formatNumber(summary?.total_requests || 0),
+          meta: `${t('request_window')}: ${state.hours}h`,
+        },
+        {
+          label: t('success_rate'),
+          value: formatPercent(summary?.successful_requests || 0, summary?.total_requests || 0),
+          meta: `${formatNumber(summary?.failed_requests || 0)} ${t('failed_requests')}`,
+        },
+        {
+          label: t('average_latency'),
+          value: `${formatNumber(summary?.average_latency_ms || 0, 1)} ${t('ms_unit')}`,
+          meta: `${t('active_upstreams')}: ${formatNumber(activeUpstreams)}`,
+        },
+        {
+          label: t('total_tokens'),
+          value: formatTokenCount(summary?.tokens_total || 0),
+          meta: `${formatTokenCount(summary?.tokens_prompt || 0)} / ${formatTokenCount(summary?.tokens_completion || 0)} ${t('prompt_completion')}`,
+        },
+        {
+          label: t('total_cost'),
+          value: formatCurrency(summary?.total_cost_usd || 0),
+          meta: t('usd_unit'),
+        },
+      ];
+
+      root.innerHTML = '';
+      cards.forEach((card) => {
+        const article = document.createElement('article');
+        article.className = 'panel overview-card';
+        article.innerHTML = `
+          <div>
+            <div class="overview-label">${card.label}</div>
+            <div class="overview-value">${card.value}</div>
+          </div>
+          <div class="overview-meta">${card.meta}</div>
+        `;
+        root.appendChild(article);
+      });
+
+      document.getElementById('gateway-tone-pill').className = `tone-pill ${statusClass(tone.tone)}`;
+      document.getElementById('gateway-tone-pill').innerHTML = `<strong>${tone.label}</strong>`;
+    }
+
+    function renderRequests(requests) {
+      const root = document.getElementById('requests-table');
+      root.innerHTML = '';
+
+      if (!requests.length) {
+        const empty = document.createElement('div');
+        empty.className = 'empty-state';
+        empty.textContent = (state.data.requests || []).length ? t('no_matching_requests') : t('no_requests');
+        root.appendChild(empty);
         return;
       }
-      data.slice(0, 5).forEach((entry) => {
-        const div = document.createElement('div');
-        div.className = 'item';
-        div.innerHTML = `
-          <span>${t.app}: ${entry.app_name} (${t.port} ${entry.app_port})</span>
-          <strong>${entry.success ? '✅' : '❌'} ${entry.status_code ?? '—'} ${entry.request_protocol}</strong>
-          <span>${t.upstream}: ${entry.upstream_id || 'none'}</span>
-          <strong>${entry.tokens_total ?? 0} ${t.tokens} · ${entry.latency_ms ?? '—'}ms</strong>
+
+      requests.slice(0, 10).forEach((row) => {
+        const meta = requestStatusMeta(row);
+        const item = document.createElement('div');
+        item.className = 'table-row';
+        item.innerHTML = `
+          <div>
+            <div class="cell-primary">${formatTimestamp(row.timestamp)}</div>
+            <div class="cell-secondary">${routeModeLabel(row.route_mode)}</div>
+          </div>
+          <div>
+            <div class="cell-primary">${row.app_name || t('unknown')} · ${row.model || '—'}</div>
+            <div class="cell-secondary">${row.request_protocol || '—'} · ${row.app_port ?? '—'}</div>
+          </div>
+          <div><span class="status-badge ${statusClass(meta.tone)}">${meta.label}</span></div>
+          <div>
+            <div class="cell-primary">${row.upstream_id || '—'}</div>
+            <div class="cell-secondary">${row.status_code || '—'}</div>
+          </div>
+          <div>
+            <div class="cell-primary">${formatTokenCount(row.tokens_total || 0)}</div>
+            <div class="cell-secondary">${formatCurrency(row.cost_usd || 0)}</div>
+          </div>
+          <div>
+            <div class="cell-primary">${formatNumber(row.latency_ms || 0, 1)} ${t('ms_unit')}</div>
+            <div class="cell-secondary">${row.success ? t('req_success') : (row.error_type || t('req_failed'))}</div>
+          </div>
         `;
-        list.appendChild(div);
+        root.appendChild(item);
       });
     }
 
-    function renderUpstreams(snapshot = []) {
-      const list = document.getElementById('upstreams-list');
-      const t = translations[currentLang];
-      list.innerHTML = '';
-      snapshot.forEach((upstream) => {
-        const div = document.createElement('div');
-        div.className = 'item';
-        div.innerHTML = `
-          <span>${upstream.name} (${upstream.id})</span>
-          <strong>${upstream.circuit_state}</strong>
-          <span>${t.cooldown}: ${upstream.cooldown_until ? new Date(upstream.cooldown_until).toLocaleTimeString() : t.ready}</span>
-          <strong>${t.failures}: ${upstream.consecutive_failures}</strong>
-        `;
-        list.appendChild(div);
-      });
-      if (!snapshot.length) {
-        list.innerHTML = `<div class="item"><span>${t.no_upstreams}</span></div>`;
+    function renderUpstreams(upstreams, summary) {
+      const root = document.getElementById('upstreams-list');
+      root.innerHTML = '';
+      const upstreamStats = new Map((summary?.upstreams || []).map((row) => [row.upstream_id, row]));
+
+      if (!upstreams.length) {
+        const empty = document.createElement('div');
+        empty.className = 'empty-state';
+        empty.textContent = t('no_upstreams');
+        root.appendChild(empty);
+        return;
       }
+
+      upstreams.forEach((upstream) => {
+        const tone =
+          upstream.circuit_state === 'open'
+            ? 'danger'
+            : upstream.circuit_state === 'half_open'
+              ? 'warn'
+              : 'success';
+        const stats = upstreamStats.get(upstream.id) || {
+          total_requests: 0,
+          successful_requests: 0,
+          failed_requests: 0,
+          tokens_total: 0,
+          total_cost_usd: 0,
+        };
+        const successRate = stats.total_requests
+          ? formatPercent(stats.successful_requests || 0, stats.total_requests || 0)
+          : '—';
+
+        const card = document.createElement('div');
+        card.className = 'upstream-card';
+        card.innerHTML = `
+          <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;">
+            <div>
+              <div class="cell-primary">${upstream.name || upstream.id}</div>
+              <div class="cell-secondary">${upstream.id} · priority ${upstream.priority ?? '—'}</div>
+            </div>
+            <span class="status-badge ${statusClass(tone)}">${circuitStateLabel(upstream.circuit_state)}</span>
+          </div>
+          <div class="upstream-metrics">
+            <div class="metric-box">
+              <span>${t('cooldown')}</span>
+              <strong>${formatRelativeCooldown(upstream.cooldown_until)}</strong>
+            </div>
+            <div class="metric-box">
+              <span>${t('failures')}</span>
+              <strong>${formatNumber(upstream.consecutive_failures || 0)}</strong>
+            </div>
+            <div class="metric-box">
+              <span>${t('avg_latency_short')}</span>
+              <strong>${formatNumber(upstream.average_latency_ms || 0, 1)} ${t('ms_unit')}</strong>
+            </div>
+            <div class="metric-box">
+              <span>${t('last_success')}</span>
+              <strong>${formatTimestamp(upstream.last_success_at)}</strong>
+            </div>
+            <div class="metric-box">
+              <span>${t('upstream_requests')}</span>
+              <strong>${formatCompactCount(stats.total_requests || 0)}</strong>
+            </div>
+            <div class="metric-box">
+              <span>${t('upstream_tokens')}</span>
+              <strong>${formatTokenCount(stats.tokens_total || 0)}</strong>
+            </div>
+            <div class="metric-box">
+              <span>${t('upstream_cost')}</span>
+              <strong>${formatCurrency(stats.total_cost_usd || 0)}</strong>
+            </div>
+          </div>
+          <div>
+            <div class="cell-secondary">${t('upstream_success_rate')}</div>
+            <div class="error-copy">${successRate}</div>
+          </div>
+          <div>
+            <div class="cell-secondary">${t('last_error')}</div>
+            <div class="error-copy">${upstream.last_error || '—'}</div>
+          </div>
+        `;
+        root.appendChild(card);
+      });
     }
 
-    function renderConfig(config) {
-      const el = document.getElementById('config-block');
-      el.textContent = JSON.stringify(config, null, 2);
+    function renderApps(summary) {
+      const root = document.getElementById('apps-list');
+      root.innerHTML = '';
+      const apps = summary?.apps || [];
+      const totalTokens = Number(summary?.tokens_total || 0);
+
+      if (!apps.length) {
+        const empty = document.createElement('div');
+        empty.className = 'empty-state';
+        empty.textContent = t('no_apps');
+        root.appendChild(empty);
+        return;
+      }
+
+      apps.forEach((app) => {
+        const rawShare = totalTokens ? (Number(app.tokens_total || 0) / totalTokens) * 100 : 0;
+        const shareFill = rawShare > 0 ? Math.max(rawShare, 4) : 0;
+        const shareLabel = rawShare > 0 && rawShare < 1 ? '<1%' : `${Math.round(rawShare)}%`;
+        const card = document.createElement('div');
+        card.className = 'app-card';
+        card.innerHTML = `
+          <div class="app-row">
+            <div class="app-topline">
+              <div class="app-name">${app.app_name || t('unknown')}</div>
+              <div class="cell-secondary">${formatNumber(app.total_requests || 0)} ${t('requests_unit')}</div>
+            </div>
+            <div class="share-bar"><div class="share-fill" style="width:${shareFill}%"></div></div>
+            <div class="app-stats">
+              <div class="metric-box">
+                <span>${t('table_tokens')}</span>
+                <strong>${formatTokenCount(app.tokens_total || 0)}</strong>
+              </div>
+              <div class="metric-box">
+                <span>${t('total_cost')}</span>
+                <strong>${formatCurrency(app.total_cost_usd || 0)}</strong>
+              </div>
+              <div class="metric-box">
+                <span>${t('token_share')}</span>
+                <strong>${totalTokens ? shareLabel : '—'}</strong>
+              </div>
+            </div>
+          </div>
+        `;
+        root.appendChild(card);
+      });
+    }
+
+    function renderRuntime(meta, config) {
+      const root = document.getElementById('runtime-grid');
+      root.innerHTML = '';
+      const cards = [
+        { label: t('version'), value: meta?.version || '—' },
+        { label: t('database_type'), value: meta?.database_type || '—' },
+        { label: t('listener_count'), value: formatNumber(meta?.listener_count || 0) },
+        { label: t('upstream_count'), value: formatNumber(meta?.upstream_count || 0) },
+      ];
+
+      cards.forEach((card) => {
+        const item = document.createElement('div');
+        item.className = 'runtime-card';
+        item.innerHTML = `
+          <div class="metric-box">
+            <span>${card.label}</span>
+            <strong>${card.value}</strong>
+          </div>
+        `;
+        root.appendChild(item);
+      });
+
+      document.getElementById('config-block').textContent = JSON.stringify(config, null, 2);
+      document.getElementById('meta-version').textContent = meta?.version || '—';
+      document.getElementById('build-label').textContent =
+        meta?.build_revision || (meta?.dashboard_updated_at ? new Date(meta.dashboard_updated_at).toISOString() : meta?.version || '—');
+      document.getElementById('started-at').textContent = formatTimestamp(meta?.started_at);
+    }
+
+    function renderError(error) {
+      const root = document.getElementById('requests-table');
+      root.innerHTML = '';
+      const item = document.createElement('div');
+      item.className = 'error-state';
+      item.textContent = error.message || String(error);
+      root.appendChild(item);
+    }
+
+    function renderAll() {
+      renderStaticCopy();
+      const summary = state.data.summary || {};
+      const upstreams = state.data.upstreams?.memory || [];
+      const requests = state.data.requests || [];
+      populateFilters(summary);
+      renderNotice();
+      renderOverview(summary, upstreams);
+      renderTrendStrip(summary);
+      renderRequests(requests);
+      renderUpstreamDrawerSummary(summary, upstreams);
+      renderUpstreams(upstreams, summary);
+      renderApps(summary);
+      renderRuntime(state.data.meta || {}, state.data.config || {});
+      document.getElementById('last-updated').textContent = state.lastUpdated
+        ? new Date(state.lastUpdated).toLocaleTimeString(state.lang === 'zh' ? 'zh-CN' : 'en-US')
+        : '—';
+
+      if (state.error) {
+        renderError(state.error);
+      }
     }
 
     async function refreshAll() {
       try {
-        const [summary, requests, upstreams, config] = await Promise.all([
-          fetchJson(endpoints.summary),
-          fetchJson(endpoints.requests),
-          fetchJson(endpoints.upstreams),
-          fetchJson(endpoints.config)
+        state.error = null;
+        const requestParams = new URLSearchParams({
+          hours: state.hours,
+          limit: '200',
+        });
+        if (state.filters.status === 'failed') {
+          requestParams.set('success', 'false');
+        }
+        if (state.filters.app !== 'all') {
+          requestParams.set('app_name', state.filters.app);
+        }
+        if (state.filters.upstream !== 'all') {
+          requestParams.set('upstream_id', state.filters.upstream);
+        }
+        if (state.filters.route !== 'all') {
+          requestParams.set('route_mode', state.filters.route);
+        }
+        const [summary, requests, upstreams, config, meta] = await Promise.all([
+          fetchJson(`/api/summary?hours=${state.hours}`),
+          fetchJson(`/api/requests?${requestParams.toString()}`),
+          fetchJson('/api/upstreams'),
+          fetchJson('/api/config'),
+          fetchJson('/api/meta'),
         ]);
-        renderSummary(summary);
-        renderRequests(requests);
-        renderUpstreams(upstreams.memory || []);
-        renderConfig(config);
+        state.data = { summary, requests, upstreams, config, meta };
+        state.lastUpdated = Date.now();
       } catch (error) {
-        console.error('dashboard refresh failed', error);
+        state.error = error;
       }
+      renderAll();
     }
 
-    document.getElementById('refresh-summary').addEventListener('click', refreshAll);
+    function setLanguage(lang) {
+      state.lang = lang;
+      localStorage.setItem('lang', lang);
+      renderAll();
+    }
 
-    // Initialize language on page load
-    setLanguage(currentLang);
-    updateTime();
-    setInterval(() => {
-      updateTime();
+    function setHours(hours) {
+      state.hours = hours;
+      localStorage.setItem('dashboard-hours', hours);
       refreshAll();
-    }, 15000);
+    }
+
+    document.querySelectorAll('.lang-btn').forEach((button) => {
+      button.addEventListener('click', () => setLanguage(button.dataset.lang));
+    });
+
+    document.querySelectorAll('.hours-btn').forEach((button) => {
+      button.addEventListener('click', () => setHours(button.dataset.hours));
+    });
+
+    document.querySelectorAll('.status-filter-btn').forEach((button) => {
+      button.addEventListener('click', () => {
+        state.filters.status = button.dataset.status;
+        refreshAll();
+      });
+    });
+
+    document.getElementById('filter-app').addEventListener('change', (event) => {
+      state.filters.app = event.target.value;
+      refreshAll();
+    });
+
+    document.getElementById('filter-upstream').addEventListener('change', (event) => {
+      state.filters.upstream = event.target.value;
+      refreshAll();
+    });
+
+    document.getElementById('filter-route').addEventListener('change', (event) => {
+      state.filters.route = event.target.value;
+      refreshAll();
+    });
+
+    document.getElementById('upstreams-drawer-toggle').addEventListener('click', () => {
+      state.ui.upstreamsDrawerOpen = !state.ui.upstreamsDrawerOpen;
+      localStorage.setItem('upstreams-drawer-open', String(state.ui.upstreamsDrawerOpen));
+      renderAll();
+    });
+
+    document.getElementById('refresh-button').addEventListener('click', refreshAll);
+
+    renderStaticCopy();
+    state.refreshTimer = setInterval(refreshAll, 15000);
+    refreshAll();
   </script>
 </body>
 </html>

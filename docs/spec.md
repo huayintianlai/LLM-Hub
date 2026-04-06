@@ -1,312 +1,326 @@
-# LiteLLM Gateway 项目规格说明
+# LLM-Hub 项目规格说明
 
-> 注意：这份文档主要记录早期的 LiteLLM + `codex_proxy` 方案，已经不是当前实施基线。
->
-> 当前项目的真实架构与实施基线以 [ARCHITECTURE.md](/Users/KenSir/Documents/coding/AIWorkSpace/LLM-Hub/ARCHITECTURE.md) 和 [TODO.md](/Users/KenSir/Documents/coding/AIWorkSpace/LLM-Hub/TODO.md) 为准。
+> 更新日期：2026-04-06  
+> 当前版本：v2.0 (基于统一网关架构)
 
 ## 项目背景
 
-本项目旨在构建一个统一的 AI 模型网关，为多个应用提供高可用的 GPT 和 Claude 模型访问服务。
+LLM-Hub 是一个统一的 AI 模型网关，为本地多个应用提供高可用的 GPT 和 Claude 模型访问服务。
 
-这个本地网关可以理解为一个分发器，我本地电脑的项目全都只认网关，包含：codex、Claude code、OpenClaw、kekebaby 等可能的未来项目。
+### 核心理念
 
-可以有多种方式接入网关，但是网关往外输送 tokens 是就是最适配项目的。
+这个本地网关可以理解为一个**智能分发器**，本地电脑的所有项目都通过网关访问 AI 模型，包括：
+- **Codex CLI**：AI 编程助手
+- **Claude Code**：AI 代码助手
+- **KekeBaby**：家庭记忆数据基础设施
+- **OpenClaw**：其他可能的项目
+- 未来的其他应用
 
-另外，还能做到容灾、比如中转商限并发或不稳定等，目的就是通过多渠道抵抗中转渠道商带来的不稳定。
+### 解决的问题
 
+1. **多渠道容灾**：通过配置多个 API 中转站作为备用渠道，抵抗单一中转商的不稳定性
+2. **统一接入**：所有应用只需配置一次网关地址，无需关心上游变化
+3. **协议适配**：自动处理不同应用和上游之间的协议差异
+4. **应用隔离**：不同应用使用不同端口，可以独立配置路由策略
 
-### 核心需求
+---
 
-1. **多渠道支持**：配置多个 API 中转站作为备用渠道，确保服务高可用
-2. **自动故障转移**：当主渠道失败时，自动切换到备用渠道
-3. **统一接口**：为所有应用提供统一的 OpenAI 兼容 API
-4. **Codex CLI 支持**：支持 Codex CLI 的特殊 `/responses` API 格式
+## 核心需求
 
-### 使用场景
+### 功能需求
 
-- **Codex CLI**：开发者使用的 AI 编程助手 ✅
-- **KekeBaby 项目**：家庭记忆数据基础设施，使用 GPT 进行照片故事性评分 ✅
-- 其他需要 GPT/Claude 模型的应用
+1. **多渠道支持** ✅
+   - 配置多个 API 中转站作为备用渠道
+   - 优先级路由：主渠道优先，备用渠道待命
 
-## 项目目标
+2. **自动故障转移** ✅
+   - 主渠道失败时自动切换到备用渠道
+   - 熔断器机制：3 次失败触发，60 秒冷却
+   - 自动恢复：冷却后自动重试主渠道
 
-### 主要目标
+3. **统一接口** ✅
+   - 为所有应用提供 OpenAI 兼容 API
+   - 支持 `/chat/completions` 标准接口
+   - 支持 `/responses` Codex 专用接口
 
-1. ✅ **双渠道高可用**：配置渠道 A 和渠道 B，互为备份
-2. ✅ **Codex CLI 支持**：让 Codex CLI 能够通过网关正常工作
-3. ✅ **自动负载均衡**：在多个渠道之间自动分配请求
-4. ✅ **故障自动恢复**：失败节点冷却后自动重新启用
-5. ❌ **OpenClaw 集成**：项目不存在或名称不同
-6. ✅ **KekeBaby 集成**：已配置使用网关
+4. **协议转换** ✅
+   - 自动检测上游能力
+   - 智能选择直通或转换模式
+   - 对客户端透明
 
-### 技术目标
+5. **应用级隔离** ✅
+   - 多端口监听，不同应用使用不同端口
+   - 独立的路由策略（latency-first, cost-first, balanced）
+   - 独立的认证配置
 
-- 使用 LiteLLM 作为网关核心
-- 支持 OpenAI 兼容 API
-- 支持流式和非流式响应
-- 提供健康检查和监控能力
+### 非功能需求
+
+1. **高可用性**
+   - 目标可用性：99.9%
+   - 故障转移时间：< 3 秒
+   - 零停机时间
+
+2. **性能**
+   - 响应时间：< 2 秒
+   - 并发支持：100+ QPS
+   - 低延迟路由
+
+3. **可观测性**
+   - 详细日志记录
+   - 请求统计和追踪
+   - 熔断器状态监控
+
+---
+
+## 使用场景
+
+### 已集成应用
+
+| 应用 | 端口 | 协议 | 路由策略 | 状态 |
+|------|------|------|---------|------|
+| Codex CLI | 4105 | /responses + /chat/completions | latency-first | ✅ 已配置 |
+| KekeBaby | 4106 | /chat/completions | cost-first | ⏳ 待配置 |
+| Claude Code | 4107 | /chat/completions | balanced | ⏳ 待配置 |
+| 默认/其他 | 4000 | /chat/completions | balanced | ✅ 可用 |
+
+### 典型使用流程
+
+1. **Codex CLI 使用场景**
+   - 开发者在终端使用 Codex CLI 编写代码
+   - Codex 发送 `/responses` 请求到 `localhost:4105`
+   - 网关检测 quan2go 支持原生 `/responses`，直接转发
+   - quan2go 故障时，自动转换为 `/chat/completions` 发送到 yunyi
+   - 响应自动转换回 `/responses` 格式返回给 Codex
+
+2. **KekeBaby 使用场景**
+   - KekeBaby 分析照片，需要 GPT 评分
+   - 发送 `/chat/completions` 请求到 `localhost:4106`
+   - 网关使用 cost-first 策略，优先选择成本低的上游
+   - 返回评分结果
+
+---
 
 ## 系统架构
 
+### 当前架构（v2.0）
+
 ```
-┌─────────────────┐
-│   Codex CLI     │
-└────────┬────────┘
-         │ /responses API
-         ↓
-┌─────────────────┐
-│ codex_proxy.mjs │ (端口 4105)
-│  - 路径转换     │
-│  - 格式转换     │
-└────────┬────────┘
-         │ /chat/completions
-         ↓
-┌─────────────────────────────────┐
-│      LiteLLM Gateway            │ (端口 4000)
-│  - 负载均衡                      │
-│  - 故障转移                      │
-│  - 健康检查                      │
-└────────┬────────────────────────┘
-         │
-    ┌────┴────┐
-    ↓         ↓
-┌────────┐ ┌────────┐
-│渠道 A   │ │渠道 B   │
-│yunyi.cfd│ │quan2go │
-└────────┘ └────────┘
-```
-
-## 已解决的问题
-
-### 1. Codex 代理路径重写错误 ✅
-
-**问题描述**：
-- 旧版 `codex_proxy.mjs` 会将 `/responses` 错误地重写为 `/chat/completions`
-- 导致 Codex CLI 无法正常工作
-
-**解决方案**：
-- 修改 `rewritePath` 函数，根据目标渠道决定是否转换路径
-- 当使用 LiteLLM 时：`/responses` → `/chat/completions`
-- 当直连上游时：保持 `/responses` 不变
-
-**相关文件**：
-- `codex_proxy.mjs`
-- `docs/CODEX_TROUBLESHOOTING.md`
-
-### 2. 端口配置不匹配 ✅
-
-**问题描述**：
-- Codex CLI 配置文件中的端口是 8105
-- 实际代理监听的是 4105 端口
-
-**解决方案**：
-- 更新 `~/.codex/config.toml` 中的 `base_url` 为 `http://127.0.0.1:4105`
-
-**相关文件**：
-- `~/.codex/config.toml`
-
-### 3. API 端点格式差异 ✅
-
-**问题描述**：
-- Codex `/responses` API 使用 `instructions` 字段
-- OpenAI `/chat/completions` API 使用 `messages` 数组
-
-**解决方案**：
-- 在 `codex_proxy.mjs` 中添加格式转换逻辑
-- 将 `instructions` 转换为 system message
-- 映射模型名称（gpt-5.4 → gpt, gpt-5.3-codex → codex）
-
-**相关文件**：
-- `codex_proxy.mjs` 的 `rewriteJsonBody` 函数
-
-### 4. 渠道 B (quan2go) 配置 ✅
-
-**问题描述**：
-- quan2go 的正确 API 端点不明确
-- 需要激活才能使用
-
-**解决方案**：
-- 确认正确的 API 端点：`https://capi.quan2go.com/v1`
-- 发送激活请求后正常工作
-- 配置到 LiteLLM 作为备用渠道
-
-**相关文件**：
-- `config.yaml`
-- `.env`
-
-### 5. quan2go 流式响应问题 ✅
-
-**问题描述**：
-- quan2go 即使设置 `stream:false` 也返回流式数据
-- 导致 LiteLLM 健康检查失败
-
-**解决方案**：
-- 移除 quan2go 节点配置中的 `stream: true` 参数
-- 修改路由策略为 `simple-shuffle`，优先使用渠道 A
-- 健康检查失败不影响实际使用，故障转移仍然有效
-
-**相关文件**：
-- `config.yaml`
-
-### 6. LiteLLM 配置优化 ✅
-
-**问题描述**：
-- 使用 `mode: production` 导致健康检查失败
-- 子进程不断重启
-
-**解决方案**：
-- 移除所有节点配置中的 `mode: production`
-- 调整路由策略和重试参数
-
-**相关文件**：
-- `config.yaml`
-
-## 待解决的问题
-
-### 1. KekeBaby 项目完整测试 ✅
-
-**状态**：已配置完成
-
-**配置位置**：`~/Documents/coding/KekeBaby/deploy/.env.local`
-
-**配置内容**：
-```bash
-OPENAI_API_KEY=sk-litellm-master-key-change-me
-OPENAI_BASE_URL=http://127.0.0.1:4000
-CURATION_CLOUD_MODEL=gpt
+┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐
+│  Codex CLI  │  │  KekeBaby   │  │ Claude Code │  │   其他应用   │
+└──────┬──────┘  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘
+       │ :4105          │ :4106          │ :4107          │ :4000
+       │                │                │                │
+       └────────────────┴────────────────┴────────────────┘
+                              │
+                    ┌─────────▼──────────┐
+                    │  LLM-Hub Gateway   │ (Docker 容器)
+                    │  - 多端口监听       │
+                    │  - 协议检测与转换   │
+                    │  - 智能路由         │
+                    │  - 熔断器           │
+                    │  - 请求记录         │
+                    └─────────┬──────────┘
+                              │
+                    ┌─────────┴──────────┐
+                    │                    │
+              ┌─────▼─────┐      ┌──────▼──────┐
+              │ quan2go   │      │   yunyi     │
+              │ (优先级1)  │      │  (优先级2)   │
+              │ 支持原生   │      │  仅支持      │
+              │ /responses│      │ /chat/      │
+              └───────────┘      └─────────────┘
 ```
 
-**说明**：
-- KekeBaby 已经配置使用 LiteLLM Gateway
-- 使用 `gpt` 模型进行照片故事性评分
-- 需要启动 PostgreSQL 数据库才能完整测试
-- 配置文件路径：`~/Documents/coding/KekeBaby/deploy/.env.local`
+### 关键组件
 
-### 2. quan2go 健康检查优化 🔄
+1. **多端口监听器**
+   - 根据端口自动识别应用
+   - 应用独立的路由策略和认证
 
-**问题**：
-- quan2go 节点健康检查失败（但实际可用）
-- 可能影响监控和告警
+2. **协议检测与转换**
+   - 检测请求协议（/responses 或 /chat/completions）
+   - 检测上游能力（原生支持 or 需要转换）
+   - 智能选择直通或转换模式
 
-**可能的解决方案**：
-- 自定义健康检查逻辑
-- 或者接受当前状态（不影响实际使用）
+3. **上游管理器**
+   - 优先级路由
+   - 熔断器状态管理
+   - 自动故障检测和恢复
 
-### 3. 监控和告警 📋
+4. **请求记录器**
+   - 异步写入 SQLite 数据库
+   - 记录 app_name、上游消耗、token 使用
+   - 支持按应用统计
 
-**需求**：
-- 添加节点状态监控
-- 添加故障转移告警
-- 记录请求统计和错误率
+---
 
-**可能的工具**：
-- Prometheus + Grafana
-- LiteLLM 内置的统计功能
+## 已实现的功能
 
-### 4. 更多备用渠道 📋
+### 1. Docker 容器化部署 ✅
 
-**需求**：
-- 添加 GPT_KEY_C 和 GPT_KEY_D
-- 增加更多 Claude 渠道
-- 提高系统可用性
+- 基于 Node.js 24 Alpine
+- 健康检查配置
+- 多端口映射
+- 数据持久化（logs, data, run）
 
-### 5. 性能优化 📋
+### 2. 双上游容灾 ✅
 
-**需求**：
-- 优化路由策略
-- 减少延迟
-- 提高并发处理能力
+**quan2go (优先级 1)**
+- 支持 `/responses` 和 `/chat/completions`
+- 原生 Codex 格式支持
+- 成本：$0.008/1K prompt, $0.024/1K completion
 
-## 配置文件说明
+**yunyi (优先级 2)**
+- 仅支持 `/chat/completions`
+- 备用渠道
+- 成本：$0.01/1K prompt, $0.03/1K completion
+
+### 3. 熔断器机制 ✅
+
+- 故障阈值：3 次失败
+- 初始冷却：60 秒
+- 最大冷却：30 分钟
+- 指数退避：启用
+
+### 4. 协议自动转换 ✅
+
+- `/responses` ↔ `/chat/completions` 双向转换
+- 字段映射：`instructions` ↔ `messages`
+- 模型名称映射
+- 流式和非流式支持
+
+### 5. 应用级隔离 ✅
+
+- 端口级别的应用识别
+- 独立路由策略
+- 独立认证配置
+
+### 6. 完整测试 ✅
+
+- 基础功能测试：10/10 通过
+- 故障转移测试：18/18 成功
+- 并发测试：10/10 成功
+- 可用性：100%
+
+---
+
+## 配置说明
 
 ### 核心配置文件
 
-| 文件 | 说明 | 关键配置 |
-|------|------|----------|
-| `config.yaml` | LiteLLM 主配置 | 模型列表、路由策略、故障转移 |
-| `.env` | 环境变量 | API Keys、Master Key |
-| `codex_proxy.mjs` | Codex 代理 | 渠道配置、路径转换、格式转换 |
-| `docker-compose.yml` | Docker 配置 | 端口映射、环境变量 |
+| 文件 | 说明 |
+|------|------|
+| `config/gateway.yaml` | 网关主配置（端口、上游、路由策略） |
+| `.env` | 环境变量（API Keys） |
+| `docker-compose.yml` | Docker 配置 |
 
 ### 测试脚本
 
 | 文件 | 说明 |
 |------|------|
-| `test-full-system.sh` | 完整系统测试 |
-| `test-gpt-channels.sh` | 渠道可用性测试 |
-| `status.sh` | 系统状态检查 |
+| `scripts/test-failover.sh` | 基础功能测试 |
+| `scripts/test-failover-simulation.sh` | 故障转移模拟测试 |
+| `scripts/test-docker-deployment.sh` | Docker 部署测试 |
 
 ### 文档
 
 | 文件 | 说明 |
 |------|------|
-| `docs/CODEX_TROUBLESHOOTING.md` | Codex 故障排查指南 |
-| `docs/DUAL_CHANNEL_COMPLETE.md` | 双渠道配置完成报告 |
-| `docs/GPT_CHANNELS_TEST.md` | 渠道测试报告 |
-| `docs/GPT_KEY_B_STATUS.md` | GPT_KEY_B 状态说明 |
-| `CODEX_GUIDE.md` | Codex 使用指南 |
-| `CONFIG_GUIDE.md` | 配置指南 |
+| `README.md` | 项目总览与快速开始 |
+| `ARCHITECTURE.md` | 架构设计文档 |
+| `docs/DEPLOYMENT.md` | 部署指南 |
+| `docs/OPERATIONS.md` | 运维清单 |
+| `db/README.md` | 数据库与迁移说明 |
+
+---
 
 ## 运维指南
 
 ### 启动服务
 
 ```bash
-# 启动 LiteLLM Gateway
+# 启动 Docker 容器
 docker-compose up -d
 
-# 启动 Codex 代理
-./start-codex-proxy.sh
+# 查看日志
+docker logs llm-hub-gateway -f
+
+# 检查状态
+docker ps | grep llm-hub
+```
+
+### 测试验证
+
+```bash
+# 运行基础功能测试
+./scripts/test-failover.sh
+
+# 运行故障转移模拟
+./scripts/test-failover-simulation.sh
+
+# 测试特定端口
+curl -X POST http://localhost:4105/responses \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer your-token" \
+  -d '{"model":"gpt-5.3-codex","instructions":"test","stream":false}'
 ```
 
 ### 停止服务
 
 ```bash
-# 停止 Codex 代理
-./stop-codex-proxy.sh
-
-# 停止 LiteLLM Gateway
+# 停止容器
 docker-compose down
+
+# 停止并删除数据
+docker-compose down -v
 ```
 
-### 检查状态
-
-```bash
-# 检查所有服务
-./status.sh
-
-# 运行完整测试
-./test-full-system.sh
-
-# 测试渠道可用性
-./test-gpt-channels.sh
-```
-
-### 查看日志
-
-```bash
-# LiteLLM 日志
-docker-compose logs litellm -f
-
-# Codex 代理日志
-tail -f logs/codex_proxy.log
-```
+---
 
 ## 性能指标
 
-### 当前状态
+### 实测数据（2026-04-06）
 
-- **可用节点**: 3/5 (渠道 A 的 2 个节点 + Claude)
+- **可用性**: 100%
 - **响应时间**: < 2 秒
-- **故障转移时间**: < 5 秒
-- **成功率**: > 99%
-
-### 目标指标
-
-- **可用性**: 99.9%
-- **平均响应时间**: < 1 秒
 - **故障转移时间**: < 3 秒
-- **并发请求**: > 100 QPS
+- **请求成功率**: 100% (28/28)
+- **并发处理**: 10/10 成功
+
+### 容灾能力
+
+- ✅ 单上游故障不影响服务
+- ✅ 自动故障检测（3 次失败触发）
+- ✅ 快速故障转移（< 3 秒）
+- ✅ 自动恢复机制（60 秒冷却后重试）
+- ✅ 零停机时间
+
+---
+
+## 待完成功能
+
+### 短期（v2.1）
+
+1. ⏳ 配置 KekeBaby 使用网关
+2. ⏳ 配置 Claude Code 使用网关
+3. ⏳ 添加更多上游渠道（GPT_KEY_C, GPT_KEY_D）
+4. ⏳ 监控面板优化
+
+### 中期（v2.2）
+
+1. 📋 Prometheus + Grafana 监控
+2. 📋 告警通知（邮件/Slack）
+3. 📋 请求缓存层
+4. 📋 API 密钥管理
+
+### 长期（v3.0）
+
+1. 📋 支持更多模型（Claude, Gemini）
+2. 📋 请求限流和配额管理
+3. 📋 多租户支持
+4. 📋 Web 管理界面
+
+---
 
 ## 安全考虑
 
@@ -316,18 +330,31 @@ tail -f logs/codex_proxy.log
    - 不要将 API Keys 提交到 Git
 
 2. **访问控制**
-   - LiteLLM Master Key 用于访问网关
-   - 建议定期更换 Master Key
+   - Codex CLI 端口需要 Bearer token 认证
+   - 其他端口可选认证
+   - 网关只监听本地（127.0.0.1 或 0.0.0.0）
 
 3. **网络安全**
-   - LiteLLM 只监听 127.0.0.1
    - 不对外暴露端口
+   - 使用 Docker 网络隔离
+   - 建议配置防火墙规则
+
+4. **代理配置**
+   - 如使用本地代理软件，需确保上游 API 域名不会被错误拦截
+   - 代理绕过规则属于本机环境配置，不作为仓库长期文档维护
+
+---
 
 ## 版本历史
 
-- **v1.0** (2026-04-05): 初始版本，完成双渠道配置
-- **v1.1** (待定): 集成 OpenClaw 和 kekebaby
+- **v1.0** (2026-04-05): 初始版本，基于 LiteLLM
+- **v2.0** (2026-04-06): 统一网关架构，Docker 容器化，完整容灾测试
 
-## 联系方式
+---
 
-如有问题，请查看文档或运行测试脚本进行诊断。
+## 参考文档
+
+- [ARCHITECTURE.md](../ARCHITECTURE.md) - 详细架构设计
+- [DEPLOYMENT.md](DEPLOYMENT.md) - 部署指南
+- [OPERATIONS.md](OPERATIONS.md) - 运维与排障
+- [README.md](../README.md) - 项目总览

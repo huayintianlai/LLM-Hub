@@ -104,28 +104,45 @@ export async function startTestGateway({
   chatEvents = defaultChatEvents,
   chatUsageRequiresInclude = false,
   modelMap = { 'gpt-5.4': 'gpt-5.4' },
+  upstreams,
+  openClawConfig,
 } = {}) {
-  const upstreamServer = createMockUpstream({
-    responsesHandler: (req, res, body) => {
-      const events = typeof responsesEvents === 'function' ? responsesEvents({ requestBody: body }) : responsesEvents;
-      buildSse(res, events);
+  const upstreamDefinitions = upstreams || [
+    {
+      id: 'mock',
+      name: 'mock',
+      supportsResponses,
+      responsesHandler: (req, res, body) => {
+        const events = typeof responsesEvents === 'function' ? responsesEvents({ requestBody: body }) : responsesEvents;
+        buildSse(res, events);
+      },
+      chatHandler: (req, res, body) => {
+        const events = typeof chatEvents === 'function' ? chatEvents({ requestBody: body }) : chatEvents;
+        const shouldIncludeUsage = !chatUsageRequiresInclude || body?.stream_options?.include_usage === true;
+        const normalized = shouldIncludeUsage
+          ? events
+          : events.map((event) => {
+              const nextEvent = cloneJson(event);
+              delete nextEvent.usage;
+              return nextEvent;
+            });
+        buildSse(res, normalized);
+      },
     },
-    chatHandler: (req, res, body) => {
-      const events = typeof chatEvents === 'function' ? chatEvents({ requestBody: body }) : chatEvents;
-      const shouldIncludeUsage = !chatUsageRequiresInclude || body?.stream_options?.include_usage === true;
-      const normalized = shouldIncludeUsage
-        ? events
-        : events.map((event) => {
-            const nextEvent = cloneJson(event);
-            delete nextEvent.usage;
-            return nextEvent;
-          });
-      buildSse(res, normalized);
-    },
-  });
-  await new Promise((resolve, reject) => upstreamServer.listen(0, '127.0.0.1', (err) => (err ? reject(err) : resolve())));
+  ];
 
-  const upstreamPort = upstreamServer.address().port;
+  const upstreamServers = [];
+  const resolvedUpstreams = [];
+  for (const upstream of upstreamDefinitions) {
+    const server = createMockUpstream({
+      responsesHandler: upstream.responsesHandler,
+      chatHandler: upstream.chatHandler,
+    });
+    await new Promise((resolve, reject) => server.listen(0, '127.0.0.1', (err) => (err ? reject(err) : resolve())));
+    upstreamServers.push(server);
+    resolvedUpstreams.push({ upstream, port: server.address().port });
+  }
+
   const dbPath = randomTempPath('llmhub-db', '.sqlite');
   const logPath = randomTempPath('llmhub-log', '.log');
   const config = {
@@ -141,31 +158,38 @@ export async function startTestGateway({
         },
       ],
     },
-    upstreams: [
-      {
-        id: 'mock',
-        name: 'mock',
-        origin: `http://127.0.0.1:${upstreamPort}`,
-        responses_full_path: '/openai/responses',
-        chat_full_path: '/openai/v1/chat/completions',
-        api_key: 'test',
-        timeout_ms: 30000,
-        capabilities: {
-          supports_responses: Boolean(supportsResponses),
-          supports_chat_completions: true,
-          responses_requires_stream: true,
-          responses_always_streams: true,
-        },
-        model_map: modelMap,
-        cost: { per_1k_prompt: 0.01, per_1k_completion: 0.03 },
+    upstreams: resolvedUpstreams.map(({ upstream, port }, index) => ({
+      id: upstream.id,
+      name: upstream.name || upstream.id,
+      origin: `http://127.0.0.1:${port}`,
+      responses_full_path: '/openai/responses',
+      chat_full_path: '/openai/v1/chat/completions',
+      api_key: 'test',
+      timeout_ms: 30000,
+      priority: upstream.priority || index + 1,
+      capabilities: {
+        supports_responses: Boolean(upstream.supportsResponses),
+        supports_chat_completions: true,
+        responses_requires_stream: true,
+        responses_always_streams: true,
       },
-    ],
+      model_map: upstream.modelMap || modelMap,
+      cost: { per_1k_prompt: 0.01, per_1k_completion: 0.03 },
+    })),
     failover: {
       circuit_breaker: { failure_threshold: 3, initial_cooldown: 1, max_cooldown: 5, exponential_backoff: true },
       routing_strategy: { 'codex-cli': 'latency-first' },
     },
     database: { type: 'sqlite', path: dbPath },
-    monitoring: { enabled: monitoringEnabled, dashboard_port: 0, dashboard_host: '127.0.0.1', notifications: { enabled: false } },
+    monitoring: {
+      enabled: monitoringEnabled,
+      dashboard_port: 0,
+      dashboard_host: '127.0.0.1',
+      notifications: {
+        enabled: monitoringEnabled,
+        openclaw: openClawConfig || null,
+      },
+    },
   };
   const logger = createLogger({ logFile: logPath });
   const app = new GatewayApp(config, logger);
@@ -175,7 +199,9 @@ export async function startTestGateway({
 
   const cleanup = async () => {
     await app.stop();
-    await new Promise((resolve) => upstreamServer.close(resolve));
+    for (const server of upstreamServers) {
+      await new Promise((resolve) => server.close(resolve));
+    }
     await fs.rm(dbPath, { force: true }).catch(() => {});
     await fs.rm(logPath, { force: true }).catch(() => {});
   };

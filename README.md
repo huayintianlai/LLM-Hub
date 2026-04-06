@@ -113,7 +113,7 @@ The dashboard auto-refreshes every 15 seconds and provides a real-time view of y
 - [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) - Deployment instructions
 - [docs/OPERATIONS.md](docs/OPERATIONS.md) - Operations and troubleshooting
 - [docs/spec.md](docs/spec.md) - Technical specifications
-- [DOCKER_DEPLOYMENT.md](DOCKER_DEPLOYMENT.md) - Docker deployment guide
+- [ARCHITECTURE.md](ARCHITECTURE.md) - Architecture overview
 
 ---
 
@@ -226,4 +226,4 @@ open http://localhost:8080
 - [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) - 部署说明
 - [docs/OPERATIONS.md](docs/OPERATIONS.md) - 日常操作和故障排除
 - [docs/spec.md](docs/spec.md) - 技术规格
-- [DOCKER_DEPLOYMENT.md](DOCKER_DEPLOYMENT.md) - Docker 部署指南
+- [ARCHITECTURE.md](ARCHITECTURE.md) - 架构总览
