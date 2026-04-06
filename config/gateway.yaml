@@ -1,5 +1,5 @@
 gateway:
-  host: 127.0.0.1
+  host: 0.0.0.0
   request_timeout_ms: 120000
   ports:
     - port: 4105
@@ -97,7 +97,7 @@ database:
 
 monitoring:
   enabled: true
-  dashboard_host: 127.0.0.1
+  dashboard_host: 0.0.0.0
   dashboard_port: 8080
   notifications:
     enabled: true
