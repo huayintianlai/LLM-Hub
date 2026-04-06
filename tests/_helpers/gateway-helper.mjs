@@ -45,7 +45,12 @@ const defaultResponsesEvents = [
     event: 'response.completed',
     payload: {
       type: 'response.completed',
-      response: { id: 'resp_default', status: 'completed', model: 'gpt-5.4' },
+      response: {
+        id: 'resp_default',
+        status: 'completed',
+        model: 'gpt-5.4',
+        usage: { input_tokens: 2, output_tokens: 1, total_tokens: 3 },
+      },
     },
   },
 ];
@@ -62,13 +67,24 @@ const defaultChatEvents = [
   },
 ];
 
+function cloneJson(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
 function createMockUpstream({ responsesHandler, chatHandler }) {
-  const server = http.createServer((req, res) => {
+  const server = http.createServer(async (req, res) => {
+    const chunks = [];
+    for await (const chunk of req) {
+      chunks.push(chunk);
+    }
+    const bodyText = chunks.length ? Buffer.concat(chunks).toString('utf8') : '';
+    const body = bodyText ? JSON.parse(bodyText) : null;
+
     if (req.url && req.url.startsWith('/openai/responses')) {
-      return responsesHandler(req, res);
+      return responsesHandler(req, res, body);
     }
     if (req.url && req.url.startsWith('/openai/v1/chat/completions')) {
-      return chatHandler(req, res);
+      return chatHandler(req, res, body);
     }
     res.writeHead(404);
     res.end('not found');
@@ -86,10 +102,26 @@ export async function startTestGateway({
   monitoringEnabled = false,
   responsesEvents = defaultResponsesEvents,
   chatEvents = defaultChatEvents,
+  chatUsageRequiresInclude = false,
+  modelMap = { 'gpt-5.4': 'gpt-5.4' },
 } = {}) {
   const upstreamServer = createMockUpstream({
-    responsesHandler: (req, res) => buildSse(res, responsesEvents),
-    chatHandler: (req, res) => buildSse(res, chatEvents),
+    responsesHandler: (req, res, body) => {
+      const events = typeof responsesEvents === 'function' ? responsesEvents({ requestBody: body }) : responsesEvents;
+      buildSse(res, events);
+    },
+    chatHandler: (req, res, body) => {
+      const events = typeof chatEvents === 'function' ? chatEvents({ requestBody: body }) : chatEvents;
+      const shouldIncludeUsage = !chatUsageRequiresInclude || body?.stream_options?.include_usage === true;
+      const normalized = shouldIncludeUsage
+        ? events
+        : events.map((event) => {
+            const nextEvent = cloneJson(event);
+            delete nextEvent.usage;
+            return nextEvent;
+          });
+      buildSse(res, normalized);
+    },
   });
   await new Promise((resolve, reject) => upstreamServer.listen(0, '127.0.0.1', (err) => (err ? reject(err) : resolve())));
 
@@ -124,8 +156,8 @@ export async function startTestGateway({
           responses_requires_stream: true,
           responses_always_streams: true,
         },
-        model_map: { 'gpt-5.4': 'gpt-5.4' },
-        cost: {},
+        model_map: modelMap,
+        cost: { per_1k_prompt: 0.01, per_1k_completion: 0.03 },
       },
     ],
     failover: {

@@ -42,6 +42,12 @@ upstreams:
       gpt-5-codex: gpt-5.3-codex
       codex: gpt-5.3-codex
       gpt: gpt-5.4
+      Openclaw: gpt-5.4
+      openclaw: gpt-5.4
+      OpenClaw: gpt-5.4
+      小冠: gpt-5.4
+      xiaoguan: gpt-5.4
+      "Agent 小冠": gpt-5.4
     capabilities:
       supports_responses: true
       supports_chat_completions: true
@@ -68,6 +74,35 @@ upstreams:
       gpt-5-codex: gpt-5.3-codex
       codex: gpt-5.3-codex
       gpt: gpt-5.4
+      Openclaw: gpt-5.4
+      openclaw: gpt-5.4
+      OpenClaw: gpt-5.4
+      小冠: gpt-5.4
+      xiaoguan: gpt-5.4
+      "Agent 小冠": gpt-5.4
+    capabilities:
+      supports_responses: false
+      supports_chat_completions: true
+      chat_requires_stream: false
+      chat_always_streams: false
+      chat_event_format: openai
+    cost:
+      per_1k_prompt: 0.01
+      per_1k_completion: 0.03
+
+  - id: yunyi-claude
+    name: Yunyi Claude
+    origin: https://yunyi.rdzhvip.com
+    chat_full_path: /claude/v1/chat/completions
+    api_key: os.environ/CLAUDE_KEY_A
+    priority: 1
+    timeout_ms: 120000
+    model_map:
+      claude-opus-4-6: claude-opus-4-6
+      claude: claude-opus-4-6
+      老金: claude-opus-4-6
+      laojin: claude-opus-4-6
+      "Agent 老金": claude-opus-4-6
     capabilities:
       supports_responses: false
       supports_chat_completions: true
@@ -79,6 +114,8 @@ upstreams:
       per_1k_completion: 0.03
 
 failover:
+  routing_mode: dynamic
+  include_cooling_upstreams: false
   passive_monitoring: true
   circuit_breaker:
     failure_threshold: 3

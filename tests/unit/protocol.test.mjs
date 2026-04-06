@@ -6,6 +6,9 @@ import {
   convertResponsesInputToMessages,
   convertResponsesToolsToChatTools,
   supportsPassthrough,
+  upstreamSupportsRequestedModel,
+  ensureChatStreamIncludesUsage,
+  transformResponsesRequestToChat,
 } from '../../lib/protocol.mjs';
 import { createSseParser, writeSseEvent } from '../../lib/sse.mjs';
 import { ChatToResponsesStreamBridge, collectChatCompletionFromSse } from '../../lib/chat-to-responses.mjs';
@@ -63,6 +66,61 @@ test('supportsPassthrough honors streaming requirements', () => {
   };
   assert.ok(supportsPassthrough('responses', { stream: true }, upstream));
   assert.ok(!supportsPassthrough('responses', { stream: false }, upstream));
+});
+
+test('upstreamSupportsRequestedModel matches aliases and concrete upstream models', () => {
+  const gptUpstream = {
+    model_map: {
+      'gpt-5.4': 'gpt-5.4',
+      Openclaw: 'gpt-5.4',
+    },
+  };
+  const claudeUpstream = {
+    model_map: {
+      'claude-opus-4-6': 'claude-opus-4-6',
+      老金: 'claude-opus-4-6',
+    },
+  };
+
+  assert.strictEqual(upstreamSupportsRequestedModel('Openclaw', gptUpstream), true);
+  assert.strictEqual(upstreamSupportsRequestedModel('gpt-5.4', gptUpstream), true);
+  assert.strictEqual(upstreamSupportsRequestedModel('老金', gptUpstream), false);
+  assert.strictEqual(upstreamSupportsRequestedModel('claude-opus-4-6', claudeUpstream), true);
+  assert.strictEqual(upstreamSupportsRequestedModel('老金', claudeUpstream), true);
+});
+
+test('ensureChatStreamIncludesUsage only injects for streaming chat requests', () => {
+  const nonStreaming = ensureChatStreamIncludesUsage({ model: 'gpt-5.4', stream: false });
+  assert.strictEqual(nonStreaming.injected, false);
+
+  const streaming = ensureChatStreamIncludesUsage({
+    model: 'gpt-5.4',
+    stream: true,
+    stream_options: { chunk_size: 1 },
+  });
+  assert.strictEqual(streaming.injected, true);
+  assert.strictEqual(streaming.requestBody.stream_options.include_usage, true);
+  assert.strictEqual(streaming.requestBody.stream_options.chunk_size, 1);
+});
+
+test('transformResponsesRequestToChat injects include_usage when upstream chat stream is required', () => {
+  const upstream = {
+    capabilities: {
+      supports_chat_completions: true,
+      chat_always_streams: true,
+    },
+    model_map: {},
+  };
+  const { chatRequest } = transformResponsesRequestToChat(
+    {
+      model: 'gpt-5.4',
+      input: 'hello',
+      stream: false,
+    },
+    upstream
+  );
+  assert.strictEqual(chatRequest.stream, true);
+  assert.strictEqual(chatRequest.stream_options.include_usage, true);
 });
 
 test('sse parser splits blocks and emits trimmed data', () => {
