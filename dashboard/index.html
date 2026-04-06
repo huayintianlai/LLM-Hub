@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LLM Hub Dashboard</title>
+  <title>LLM Hub 仪表板</title>
   <style>
     :root {
       --bg-start: #0f172a;
@@ -112,6 +112,23 @@
     button:active {
       transform: scale(0.98);
     }
+    .lang-switch {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+    .lang-btn {
+      padding: 0.4rem 0.8rem;
+      font-size: 0.85rem;
+      background: rgba(15, 23, 42, 0.65);
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+    .lang-btn.active {
+      background: var(--accent);
+      color: #0f172a;
+      border-color: var(--accent);
+    }
     .meta {
       display: flex;
       justify-content: space-between;
@@ -144,45 +161,51 @@
   <header>
     <div>
       <h1>LLM Hub</h1>
-      <div class="muted">Unified Gateway dashboard</div>
+      <div class="muted" data-i18n="subtitle">统一网关仪表板</div>
     </div>
-    <time id="current-time"></time>
+    <div style="display: flex; gap: 1rem; align-items: center;">
+      <div class="lang-switch">
+        <button class="lang-btn" data-lang="zh">中文</button>
+        <button class="lang-btn" data-lang="en">English</button>
+      </div>
+      <time id="current-time"></time>
+    </div>
   </header>
   <main>
     <section class="card" id="summary-card">
       <div class="meta">
-        <h2>Summary</h2>
+        <h2 data-i18n="summary">概览</h2>
         <span class="tag">/api/summary</span>
       </div>
       <div class="list" id="summary-list">
         <div class="item">
-          <span>Total requests</span>
+          <span data-i18n="total_requests">总请求数</span>
           <strong>—</strong>
         </div>
         <div class="item">
-          <span>Successful</span>
+          <span data-i18n="successful">成功请求</span>
           <strong>—</strong>
         </div>
         <div class="item">
-          <span>Average latency ms</span>
+          <span data-i18n="average_latency">平均延迟 (毫秒)</span>
           <strong>—</strong>
         </div>
         <div class="item">
-          <span>Total cost USD (window)</span>
+          <span data-i18n="total_cost">总成本 (美元)</span>
           <strong>—</strong>
         </div>
       </div>
-      <button id="refresh-summary">Refresh</button>
+      <button id="refresh-summary" data-i18n="refresh">刷新</button>
     </section>
 
     <section class="card" id="requests-card">
       <div class="meta">
-        <h2>Recent requests</h2>
+        <h2 data-i18n="recent_requests">最近请求</h2>
         <span class="tag">/api/requests</span>
       </div>
       <div class="list" id="requests-list">
         <div class="item">
-          <span>Loading...</span>
+          <span data-i18n="loading">加载中...</span>
           <strong></strong>
         </div>
       </div>
@@ -190,7 +213,7 @@
 
     <section class="card" id="upstreams-card">
       <div class="meta">
-        <h2>Upstreams</h2>
+        <h2 data-i18n="upstreams">上游服务</h2>
         <span class="tag">/api/upstreams</span>
       </div>
       <div class="list" id="upstreams-list"></div>
@@ -198,13 +221,93 @@
 
     <section class="card" id="config-card">
       <div class="meta">
-        <h2>Gateway config</h2>
+        <h2 data-i18n="gateway_config">网关配置</h2>
         <span class="tag">/api/config</span>
       </div>
-      <pre id="config-block">Loading configuration…</pre>
+      <pre id="config-block" data-i18n="loading_config">加载配置中…</pre>
     </section>
   </main>
   <script>
+    const translations = {
+      zh: {
+        subtitle: '统一网关仪表板',
+        summary: '概览',
+        total_requests: '总请求数',
+        successful: '成功请求',
+        average_latency: '平均延迟 (毫秒)',
+        total_cost: '总成本 (美元)',
+        refresh: '刷新',
+        recent_requests: '最近请求',
+        loading: '加载中...',
+        upstreams: '上游服务',
+        gateway_config: '网关配置',
+        loading_config: '加载配置中…',
+        no_recent_requests: '暂无最近请求',
+        no_upstreams: '未配置上游服务',
+        app: '应用',
+        port: '端口',
+        upstream: '上游',
+        tokens: 'tokens',
+        cooldown: '冷却时间',
+        ready: '就绪',
+        failures: '失败次数'
+      },
+      en: {
+        subtitle: 'Unified Gateway dashboard',
+        summary: 'Summary',
+        total_requests: 'Total requests',
+        successful: 'Successful requests',
+        average_latency: 'Average latency (ms)',
+        total_cost: 'Total cost (USD)',
+        refresh: 'Refresh',
+        recent_requests: 'Recent requests',
+        loading: 'Loading...',
+        upstreams: 'Upstreams',
+        gateway_config: 'Gateway config',
+        loading_config: 'Loading configuration…',
+        no_recent_requests: 'No recent requests',
+        no_upstreams: 'No upstreams configured',
+        app: 'App',
+        port: 'port',
+        upstream: 'Upstream',
+        tokens: 'tokens',
+        cooldown: 'Cooldown',
+        ready: 'ready',
+        failures: 'Failures'
+      }
+    };
+
+    let currentLang = localStorage.getItem('lang') || 'zh';
+
+    function setLanguage(lang) {
+      currentLang = lang;
+      localStorage.setItem('lang', lang);
+      document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+
+      // Update all elements with data-i18n
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (translations[lang][key]) {
+          el.textContent = translations[lang][key];
+        }
+      });
+
+      // Update language buttons
+      document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-lang') === lang);
+      });
+
+      // Refresh data to update dynamic content
+      refreshAll();
+    }
+
+    // Language switcher
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        setLanguage(btn.getAttribute('data-lang'));
+      });
+    });
+
     const endpoints = {
       summary: '/api/summary',
       requests: '/api/requests',
@@ -228,11 +331,12 @@
 
     function renderSummary(summary = {}) {
       const list = document.getElementById('summary-list');
+      const t = translations[currentLang];
       const items = [
-        { label: 'Total requests', value: summary.total_requests },
-        { label: 'Successful requests', value: summary.successful_requests },
-        { label: 'Average latency ms', value: summary.average_latency_ms },
-        { label: 'Total cost USD', value: summary.total_cost_usd?.toFixed ? summary.total_cost_usd.toFixed(6) : summary.total_cost_usd }
+        { label: t.total_requests, value: summary.total_requests },
+        { label: t.successful, value: summary.successful_requests },
+        { label: t.average_latency, value: summary.average_latency_ms },
+        { label: t.total_cost, value: summary.total_cost_usd?.toFixed ? summary.total_cost_usd.toFixed(6) : summary.total_cost_usd }
       ];
       list.innerHTML = '';
       items.forEach((entry) => {
@@ -245,19 +349,20 @@
 
     function renderRequests(data = []) {
       const list = document.getElementById('requests-list');
+      const t = translations[currentLang];
       list.innerHTML = '';
       if (!data.length) {
-        list.innerHTML = '<div class="item"><span>No recent requests</span></div>';
+        list.innerHTML = `<div class="item"><span>${t.no_recent_requests}</span></div>`;
         return;
       }
       data.slice(0, 5).forEach((entry) => {
         const div = document.createElement('div');
         div.className = 'item';
         div.innerHTML = `
-          <span>App: ${entry.app_name} (port ${entry.app_port})</span>
+          <span>${t.app}: ${entry.app_name} (${t.port} ${entry.app_port})</span>
           <strong>${entry.success ? '✅' : '❌'} ${entry.status_code ?? '—'} ${entry.request_protocol}</strong>
-          <span>Upstream: ${entry.upstream_id || 'none'}</span>
-          <strong>${entry.tokens_total ?? 0} tokens · ${entry.latency_ms ?? '—'}ms</strong>
+          <span>${t.upstream}: ${entry.upstream_id || 'none'}</span>
+          <strong>${entry.tokens_total ?? 0} ${t.tokens} · ${entry.latency_ms ?? '—'}ms</strong>
         `;
         list.appendChild(div);
       });
@@ -265,6 +370,7 @@
 
     function renderUpstreams(snapshot = []) {
       const list = document.getElementById('upstreams-list');
+      const t = translations[currentLang];
       list.innerHTML = '';
       snapshot.forEach((upstream) => {
         const div = document.createElement('div');
@@ -272,13 +378,13 @@
         div.innerHTML = `
           <span>${upstream.name} (${upstream.id})</span>
           <strong>${upstream.circuit_state}</strong>
-          <span>Cooldown: ${upstream.cooldown_until ? new Date(upstream.cooldown_until).toLocaleTimeString() : 'ready'}</span>
-          <strong>Failures: ${upstream.consecutive_failures}</strong>
+          <span>${t.cooldown}: ${upstream.cooldown_until ? new Date(upstream.cooldown_until).toLocaleTimeString() : t.ready}</span>
+          <strong>${t.failures}: ${upstream.consecutive_failures}</strong>
         `;
         list.appendChild(div);
       });
       if (!snapshot.length) {
-        list.innerHTML = '<div class="item"><span>No upstreams configured</span></div>';
+        list.innerHTML = `<div class="item"><span>${t.no_upstreams}</span></div>`;
       }
     }
 
@@ -306,8 +412,9 @@
 
     document.getElementById('refresh-summary').addEventListener('click', refreshAll);
 
+    // Initialize language on page load
+    setLanguage(currentLang);
     updateTime();
-    refreshAll();
     setInterval(() => {
       updateTime();
       refreshAll();
