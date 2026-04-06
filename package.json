@@ -1,0 +1,27 @@
+{
+  "name": "llm-hub",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Unified local gateway for Codex CLI and other OpenAI-compatible clients.",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "start": "node gateway.mjs",
+    "start:phase1": "node simple-passthrough-proxy.mjs",
+    "db:init": "node tools/init-db.mjs",
+    "db:migrate": "node tools/migrate-db.mjs",
+    "test": "node --test tests/unit/index.test.mjs tests/integration/index.test.mjs tests/failover/index.test.mjs tests/performance/index.test.mjs",
+    "test:unit": "node --test tests/unit/index.test.mjs",
+    "test:integration": "node --test tests/integration/index.test.mjs",
+    "test:failover": "node --test tests/failover/index.test.mjs",
+    "test:performance": "node --test tests/performance/index.test.mjs",
+    "acceptance:phase1": "bash scripts/test-phase1.sh",
+    "acceptance:codex": "bash scripts/acceptance-codex.sh"
+  },
+  "dependencies": {
+    "pg": "^8.16.3",
+    "yaml": "^2.8.1"
+  }
+}

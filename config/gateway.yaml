@@ -1,0 +1,104 @@
+gateway:
+  host: 127.0.0.1
+  request_timeout_ms: 120000
+  ports:
+    - port: 4105
+      app_name: codex-cli
+      description: Codex CLI dedicated port
+      auth:
+        require_bearer: true
+      routing_strategy: latency-first
+    - port: 4106
+      app_name: kekebaby
+      description: KekeBaby dedicated port
+      auth:
+        require_bearer: false
+      routing_strategy: cost-first
+    - port: 4107
+      app_name: claude-code
+      description: Claude Code dedicated port
+      auth:
+        require_bearer: false
+      routing_strategy: balanced
+    - port: 4000
+      app_name: default
+      description: Default gateway port
+      auth:
+        require_bearer: false
+      routing_strategy: balanced
+
+upstreams:
+  - id: quan2go-gpt
+    name: Quan2go GPT
+    origin: https://capi.quan2go.com
+    responses_full_path: /openai/responses
+    chat_full_path: /v1/chat/completions
+    api_key: os.environ/GPT_KEY_B
+    priority: 1
+    timeout_ms: 120000
+    model_map:
+      gpt-5.4: gpt-5.4
+      gpt-5.3-codex: gpt-5.3-codex
+      gpt-5-codex: gpt-5.3-codex
+      codex: gpt-5.3-codex
+      gpt: gpt-5.4
+    capabilities:
+      supports_responses: true
+      supports_chat_completions: true
+      responses_requires_stream: true
+      responses_always_streams: true
+      chat_requires_stream: false
+      chat_always_streams: true
+      responses_event_format: standard
+      chat_event_format: openai
+    cost:
+      per_1k_prompt: 0.008
+      per_1k_completion: 0.024
+
+  - id: yunyi-gpt
+    name: Yunyi GPT
+    origin: https://yunyi.cfd
+    chat_full_path: /codex/v1/chat/completions
+    api_key: os.environ/GPT_KEY_A
+    priority: 2
+    timeout_ms: 120000
+    model_map:
+      gpt-5.4: gpt-5.4
+      gpt-5.3-codex: gpt-5.3-codex
+      gpt-5-codex: gpt-5.3-codex
+      codex: gpt-5.3-codex
+      gpt: gpt-5.4
+    capabilities:
+      supports_responses: false
+      supports_chat_completions: true
+      chat_requires_stream: false
+      chat_always_streams: false
+      chat_event_format: openai
+    cost:
+      per_1k_prompt: 0.01
+      per_1k_completion: 0.03
+
+failover:
+  passive_monitoring: true
+  circuit_breaker:
+    failure_threshold: 3
+    initial_cooldown: 60
+    max_cooldown: 1800
+    exponential_backoff: true
+  routing_strategy:
+    codex-cli: latency-first
+    kekebaby: cost-first
+    claude-code: balanced
+    default: balanced
+
+database:
+  type: sqlite
+  path: ./data/llmhub.db
+
+monitoring:
+  enabled: true
+  dashboard_host: 127.0.0.1
+  dashboard_port: 8080
+  notifications:
+    enabled: true
+    critical_only: true

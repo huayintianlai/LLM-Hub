@@ -1,0 +1,92 @@
+model_list:
+  # ========== GPT 节点（2个可用） ==========
+
+  # GPT 节点 A - yunyi.cfd（已验证可用）
+  - model_name: gpt
+    litellm_params:
+      model: openai/gpt-5.4
+      api_base: https://yunyi.cfd/codex/v1
+      api_key: os.environ/GPT_KEY_A
+      timeout: 60
+      max_retries: 0
+      stream: true
+    model_info:
+      id: gpt-node-a
+
+  # GPT 节点 B - quan2go（备用渠道，已验证可用）
+  - model_name: gpt
+    litellm_params:
+      model: openai/gpt-5.4
+      api_base: https://capi.quan2go.com/v1
+      api_key: os.environ/GPT_KEY_B
+      timeout: 60
+      max_retries: 0
+    model_info:
+      id: gpt-node-b
+
+  # ========== Codex 节点（2个可用） ==========
+
+  # Codex 节点 A - yunyi.cfd
+  - model_name: codex
+    litellm_params:
+      model: openai/gpt-5.3-codex
+      api_base: https://yunyi.cfd/codex/v1
+      api_key: os.environ/GPT_KEY_A
+      timeout: 60
+      max_retries: 0
+      stream: true
+    model_info:
+      id: codex-node-a
+
+  # Codex 节点 B - quan2go（备用渠道，已验证可用）
+  - model_name: codex
+    litellm_params:
+      model: openai/gpt-5.3-codex
+      api_base: https://yunyi.cfd/codex/v1
+      api_key: os.environ/GPT_KEY_B
+      timeout: 60
+      max_retries: 0
+      stream: true
+    model_info:
+      id: codex-node-b
+
+  # ========== Claude 节点（1个可用） ==========
+
+  # Claude 节点 A - yunyi.rdzhvip.com（已验证可用）
+  - model_name: claude
+    litellm_params:
+      model: openai/claude-opus-4-6
+      api_base: https://yunyi.rdzhvip.com/claude/v1
+      api_key: os.environ/CLAUDE_KEY_A
+      timeout: 60
+      max_retries: 0
+      stream: true
+    model_info:
+      id: claude-node-a
+      
+
+# 路由策略
+router_settings:
+  routing_strategy: "simple-shuffle"  # 简单轮询，按配置顺序优先
+  num_retries: 2  # 失败后最多重试 2 次
+  timeout: 60
+  allowed_fails: 3  # 单节点连续失败 3 次后暂时移除
+  cooldown_time: 60  # 失败节点冷却 60 秒
+
+  # 自动降级（GPT、Codex 和 Claude 各自独立）
+  fallbacks:
+    - gpt: ["gpt"]  # GPT 失败切换到其他 GPT 节点
+    - codex: ["codex"]  # Codex 失败切换到其他 Codex 节点
+    - claude: ["claude"]  # Claude 失败切换到其他 Claude 节点
+
+# 全局设置
+litellm_settings:
+  drop_params: true  # 自动过滤不兼容参数
+  set_verbose: false  # 生产环境关闭详细日志
+  json_logs: true  # 使用 JSON 格式日志，便于解析
+  callbacks: callbacks.model_switch_notifier.notifier_instance  # 模型切换通知
+  
+# 可选：监控和日志
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+  database_url: os.environ/DATABASE_URL  # LiteLLM Prisma 不支持 SQLite，统计通过日志获取

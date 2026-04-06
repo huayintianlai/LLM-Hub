@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>Label</key>
+    <string>com.llmhub.gateway</string>
+    <key>ProgramArguments</key>
+    <array>
+      <string>/bin/bash</string>
+      <string>-lc</string>
+      <string>cd /Users/KenSir/Documents/coding/AIWorkSpace/LLM-Hub && ./scripts/start-gateway.sh</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>/Users/KenSir/Documents/coding/AIWorkSpace/LLM-Hub</string>
+    <key>StandardOutPath</key>
+    <string>/Users/KenSir/Documents/coding/AIWorkSpace/LLM-Hub/logs/gateway.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/KenSir/Documents/coding/AIWorkSpace/LLM-Hub/logs/gateway.log</string>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>EnvironmentVariables</key>
+    <dict>
+      <key>LLMHUB_ENV_FILE</key>
+      <string>docs/.env</string>
+    </dict>
+  </dict>
+</plist>

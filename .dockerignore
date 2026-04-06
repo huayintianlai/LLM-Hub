@@ -1,0 +1,12 @@
+node_modules
+logs/*.log
+run/*.pid
+*.log
+tmp
+.DS_Store
+.git
+.claude
+docs/.env
+.env.local
+*.md
+!README.md

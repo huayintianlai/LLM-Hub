@@ -1,0 +1,19 @@
+version: '3.9'
+
+services:
+  gateway:
+    build: .
+    env_file:
+      - docs/.env
+    ports:
+      - "4000:4000"
+      - "4105:4105"
+      - "4106:4106"
+      - "4107:4107"
+      - "8080:8080"
+    volumes:
+      - ./config:/app/config:ro
+      - ./docs/.env:/app/docs/.env:ro
+      - ./logs:/app/logs
+      - ./run:/app/run
+    restart: unless-stopped
