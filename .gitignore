@@ -5,3 +5,6 @@ run/
 .env
 .env.local
 /tmp/
+.DS_Store
+.playwright-cli/
+.vscode/
