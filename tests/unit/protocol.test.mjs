@@ -7,6 +7,7 @@ import {
   convertResponsesToolsToChatTools,
   supportsPassthrough,
   upstreamSupportsRequestedModel,
+  mapModel,
   ensureChatStreamIncludesUsage,
   transformResponsesRequestToChat,
 } from '../../lib/protocol.mjs';
@@ -88,6 +89,49 @@ test('upstreamSupportsRequestedModel matches aliases and concrete upstream model
   assert.strictEqual(upstreamSupportsRequestedModel('claude-opus-4-6', claudeUpstream), true);
   assert.strictEqual(upstreamSupportsRequestedModel('老金', claudeUpstream), true);
 });
+
+test('upstreamSupportsRequestedModel works with new supported_models format', () => {
+  const newFormatUpstream = {
+    supported_models: ['gpt-5.4', 'gpt-5.3-codex'],
+    model_aliases: {
+      codex: 'gpt-5.3-codex',
+      gpt: 'gpt-5.4',
+      Openclaw: 'gpt-5.4',
+    },
+  };
+
+  // 实际模型名应该被支持
+  assert.strictEqual(upstreamSupportsRequestedModel('gpt-5.4', newFormatUpstream), true);
+  assert.strictEqual(upstreamSupportsRequestedModel('gpt-5.3-codex', newFormatUpstream), true);
+
+  // 别名应该被支持
+  assert.strictEqual(upstreamSupportsRequestedModel('codex', newFormatUpstream), true);
+  assert.strictEqual(upstreamSupportsRequestedModel('gpt', newFormatUpstream), true);
+  assert.strictEqual(upstreamSupportsRequestedModel('Openclaw', newFormatUpstream), true);
+
+  // 不支持的模型应该返回 false
+  assert.strictEqual(upstreamSupportsRequestedModel('gpt-4o', newFormatUpstream), false);
+  assert.strictEqual(upstreamSupportsRequestedModel('claude-opus-4-6', newFormatUpstream), false);
+});
+
+test('mapModel works with new model_aliases format', () => {
+  const newFormatUpstream = {
+    supported_models: ['gpt-5.4', 'gpt-5.3-codex'],
+    model_aliases: {
+      codex: 'gpt-5.3-codex',
+      gpt: 'gpt-5.4',
+    },
+  };
+
+  // 别名应该被映射到实际模型
+  assert.strictEqual(mapModel('codex', newFormatUpstream), 'gpt-5.3-codex');
+  assert.strictEqual(mapModel('gpt', newFormatUpstream), 'gpt-5.4');
+
+  // 实际模型名应该保持不变
+  assert.strictEqual(mapModel('gpt-5.4', newFormatUpstream), 'gpt-5.4');
+  assert.strictEqual(mapModel('gpt-5.3-codex', newFormatUpstream), 'gpt-5.3-codex');
+});
+
 
 test('ensureChatStreamIncludesUsage only injects for streaming chat requests', () => {
   const nonStreaming = ensureChatStreamIncludesUsage({ model: 'gpt-5.4', stream: false });

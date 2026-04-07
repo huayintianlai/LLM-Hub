@@ -36,9 +36,10 @@ upstreams:
     api_key: os.environ/GPT_KEY_B
     priority: 1
     timeout_ms: 120000
-    model_map:
-      gpt-5.4: gpt-5.4
-      gpt-5.3-codex: gpt-5.3-codex
+    supported_models:
+      - gpt-5.4
+      - gpt-5.3-codex
+    model_aliases:
       gpt-5-codex: gpt-5.3-codex
       codex: gpt-5.3-codex
       gpt: gpt-5.4
@@ -68,9 +69,10 @@ upstreams:
     api_key: os.environ/GPT_KEY_A
     priority: 2
     timeout_ms: 120000
-    model_map:
-      gpt-5.4: gpt-5.4
-      gpt-5.3-codex: gpt-5.3-codex
+    supported_models:
+      - gpt-5.4
+      - gpt-5.3-codex
+    model_aliases:
       gpt-5-codex: gpt-5.3-codex
       codex: gpt-5.3-codex
       gpt: gpt-5.4
@@ -97,8 +99,9 @@ upstreams:
     api_key: os.environ/CLAUDE_KEY_A
     priority: 1
     timeout_ms: 120000
-    model_map:
-      claude-opus-4-6: claude-opus-4-6
+    supported_models:
+      - claude-opus-4-6
+    model_aliases:
       claude: claude-opus-4-6
       老金: claude-opus-4-6
       laojin: claude-opus-4-6
