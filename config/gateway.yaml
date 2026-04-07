@@ -139,3 +139,8 @@ monitoring:
   notifications:
     enabled: true
     critical_only: true
+    openclaw:
+      gatewayUrl: ${OPENCLAW_GATEWAY_URL}
+      gatewayToken: ${OPENCLAW_GATEWAY_TOKEN}
+      agentId: ${NOTIFY_AGENT_ID}
+      userId: ${NOTIFY_USER_ID}
