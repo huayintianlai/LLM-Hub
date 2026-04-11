@@ -63,3 +63,41 @@ test('success resets circuit breaker state', () => {
   assert.strictEqual(state.consecutive_failures, 0);
   assert.strictEqual(state.failure_count, 2);
 });
+
+test('half-open upstream is prioritized once in dynamic routing order', () => {
+  const manager = new UpstreamManager({
+    upstreams: [
+      { ...upstreams[0] },
+      { ...upstreams[0], id: 'u2', name: 'u2', priority: 2 },
+    ],
+    failover: failoverConfig.failover,
+  }, new DummyDb(), logger);
+
+  manager.getState('u1').average_latency_ms = 50000;
+  manager.getState('u2').average_latency_ms = 1000;
+  manager.getState('u1').circuit_state = 'half_open';
+
+  const ordered = manager.getOrderedUpstreams('latency-first', { dynamic: true });
+  assert.strictEqual(ordered[0], 'u1');
+});
+
+test('successful half-open probe returns upstream to normal scoring', () => {
+  const manager = new UpstreamManager({
+    upstreams: [
+      { ...upstreams[0] },
+      { ...upstreams[0], id: 'u2', name: 'u2', priority: 2 },
+    ],
+    failover: failoverConfig.failover,
+  }, new DummyDb(), logger);
+
+  manager.getState('u1').average_latency_ms = 50000;
+  manager.getState('u2').average_latency_ms = 1000;
+  manager.getState('u1').circuit_state = 'half_open';
+
+  manager.registerSuccess('u1', 800, 200);
+  const state = manager.getState('u1');
+  assert.strictEqual(state.circuit_state, 'closed');
+
+  const ordered = manager.getOrderedUpstreams('latency-first', { dynamic: false });
+  assert.strictEqual(ordered[0], 'u2');
+});

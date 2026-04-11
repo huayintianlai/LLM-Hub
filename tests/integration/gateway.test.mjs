@@ -192,6 +192,110 @@ test('integration dashboard APIs expose summary, requests and upstreams', async 
   }
 });
 
+test('integration dashboard upstream summary counts failed attempts and preserves last failure error after recovery', async () => {
+  let primaryResponses = 0;
+  const { gatewayPort, dashboardPort, cleanup } = await startTestGateway({
+    supportsResponses: true,
+    monitoringEnabled: true,
+    upstreams: [
+      {
+        id: 'primary',
+        supportsResponses: true,
+        priority: 1,
+        responsesHandler: (_req, res) => {
+          primaryResponses += 1;
+          if (primaryResponses === 1) {
+            res.writeHead(502, { 'content-type': 'text/plain; charset=utf-8' });
+            res.end('primary failed once');
+            return;
+          }
+          res.writeHead(200, { 'content-type': 'text/event-stream; charset=utf-8' });
+          res.write('event: response.completed\n');
+          res.write(`data: ${JSON.stringify({
+            type: 'response.completed',
+            response: {
+              id: 'resp_primary',
+              status: 'completed',
+              model: 'gpt-5.4',
+              usage: { input_tokens: 2, output_tokens: 1, total_tokens: 3 },
+            },
+          })}\n\n`);
+          res.write('data: [DONE]\n\n');
+          res.end();
+        },
+        chatHandler: (_req, res) => {
+          res.writeHead(200, { 'content-type': 'text/event-stream; charset=utf-8' });
+          res.write(`data: ${JSON.stringify({
+            choices: [{ delta: { content: 'ok' } }],
+            usage: { prompt_tokens: 1, completion_tokens: 2, total_tokens: 3 },
+            model: 'gpt-5.4',
+          })}\n\n`);
+          res.write('data: [DONE]\n\n');
+          res.end();
+        },
+      },
+      {
+        id: 'backup',
+        supportsResponses: true,
+        priority: 4000,
+        responsesHandler: (_req, res) => {
+          res.writeHead(200, { 'content-type': 'text/event-stream; charset=utf-8' });
+          res.write('event: response.completed\n');
+          res.write(`data: ${JSON.stringify({
+            type: 'response.completed',
+            response: {
+              id: 'resp_backup',
+              status: 'completed',
+              model: 'gpt-5.4',
+              usage: { input_tokens: 2, output_tokens: 1, total_tokens: 3 },
+            },
+          })}\n\n`);
+          res.write('data: [DONE]\n\n');
+          res.end();
+        },
+        chatHandler: (_req, res) => {
+          res.writeHead(200, { 'content-type': 'text/event-stream; charset=utf-8' });
+          res.write(`data: ${JSON.stringify({
+            choices: [{ delta: { content: 'ok' } }],
+            usage: { prompt_tokens: 1, completion_tokens: 2, total_tokens: 3 },
+            model: 'gpt-5.4',
+          })}\n\n`);
+          res.write('data: [DONE]\n\n');
+          res.end();
+        },
+      },
+    ],
+  });
+  try {
+    await fetchResponses(gatewayPort);
+    await fetchResponses(gatewayPort);
+
+    const summary = await fetch(`http://127.0.0.1:${dashboardPort}/api/summary`).then((res) => res.json());
+    const primarySummary = summary.upstreams.find((row) => row.upstream_id === 'primary');
+    const backupSummary = summary.upstreams.find((row) => row.upstream_id === 'backup');
+
+    assert.ok(primarySummary);
+    assert.strictEqual(primarySummary.successful_requests, 1);
+    assert.strictEqual(primarySummary.failed_requests, 1);
+    assert.strictEqual(primarySummary.total_requests, 2);
+    assert.ok(backupSummary);
+    assert.strictEqual(backupSummary.successful_requests, 1);
+    assert.strictEqual(backupSummary.failed_requests, 0);
+    assert.strictEqual(backupSummary.total_requests, 1);
+
+    const upstreams = await fetch(`http://127.0.0.1:${dashboardPort}/api/upstreams`).then((res) => res.json());
+    const primaryState = upstreams.memory.find((row) => row.id === 'primary');
+    assert.ok(primaryState);
+    assert.strictEqual(primaryState.consecutive_failures, 0);
+    assert.strictEqual(primaryState.last_error, null);
+    assert.ok(primaryState.last_failure_error?.includes('primary failed once'));
+    assert.ok(primaryState.last_failure_at);
+    assert.ok(primaryState.last_success_at);
+  } finally {
+    await cleanup();
+  }
+});
+
 test('integration dashboard requests API supports query filters', async () => {
   const { gatewayPort, dashboardPort, cleanup } = await startTestGateway({
     supportsResponses: true,

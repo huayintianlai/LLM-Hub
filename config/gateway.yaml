@@ -28,6 +28,10 @@ gateway:
       routing_strategy: balanced
 
 upstreams:
+  # quan2go：原生支持 /responses API
+  # 可用模型：gpt-5.4, gpt-5.3-codex
+  # 可容灾模型：gpt-5.4, gpt-5.3-codex（quan2go + yunyi 都支持）
+  # 下游可使用别名：gpt → gpt-5.4, codex → gpt-5.3-codex
   - id: quan2go-gpt
     name: Quan2go GPT
     origin: https://capi.quan2go.com
@@ -43,12 +47,6 @@ upstreams:
       gpt-5-codex: gpt-5.3-codex
       codex: gpt-5.3-codex
       gpt: gpt-5.4
-      Openclaw: gpt-5.4
-      openclaw: gpt-5.4
-      OpenClaw: gpt-5.4
-      小冠: gpt-5.4
-      xiaoguan: gpt-5.4
-      "Agent 小冠": gpt-5.4
     capabilities:
       supports_responses: true
       supports_chat_completions: true
@@ -62,6 +60,11 @@ upstreams:
       per_1k_prompt: 0.008
       per_1k_completion: 0.024
 
+  # yunyi：不支持 /responses，需要转换
+  # 可用模型：gpt-5.4, gpt-5.3, gpt-5.3-codex, gpt-5.2, gpt-5.2-codex, gpt-5.1-codex, gpt-5.1-codex-max, gpt-5.1-codex-mini, gpt-5.1, gpt-5-codex
+  # 可容灾模型：gpt-5.4, gpt-5.3-codex（quan2go + yunyi 都支持）
+  # 仅 yunyi 可用（无容灾）：gpt-5.3, gpt-5.2, gpt-5.2-codex, gpt-5.1-codex-max, gpt-5.1-codex, gpt-5.1-codex-mini, gpt-5.1, gpt-5-codex
+  # 下游可使用别名：gpt → gpt-5.4, codex → gpt-5.3-codex
   - id: yunyi-gpt
     name: Yunyi GPT
     origin: https://yunyi.cfd
@@ -71,17 +74,19 @@ upstreams:
     timeout_ms: 120000
     supported_models:
       - gpt-5.4
+      - gpt-5.3
       - gpt-5.3-codex
+      - gpt-5.2
+      - gpt-5.2-codex
+      - gpt-5.1-codex-max
+      - gpt-5.1-codex
+      - gpt-5.1-codex-mini
+      - gpt-5.1
+      - gpt-5-codex
     model_aliases:
       gpt-5-codex: gpt-5.3-codex
       codex: gpt-5.3-codex
       gpt: gpt-5.4
-      Openclaw: gpt-5.4
-      openclaw: gpt-5.4
-      OpenClaw: gpt-5.4
-      小冠: gpt-5.4
-      xiaoguan: gpt-5.4
-      "Agent 小冠": gpt-5.4
     capabilities:
       supports_responses: false
       supports_chat_completions: true
@@ -92,6 +97,10 @@ upstreams:
       per_1k_prompt: 0.01
       per_1k_completion: 0.03
 
+  # yunyi claude 渠道
+  # 可用模型：claude-opus-4-6, claude-sonnet-4-6, claude-haiku-4-5-20251001（及其他版本）
+  # 可容灾模型：无（仅 yunyi-claude 一个上游）
+  # 下游可使用别名：claude → claude-opus-4-6, opus → claude-opus-4-6, sonnet → claude-sonnet-4-6, haiku → claude-haiku-4-5-20251001
   - id: yunyi-claude
     name: Yunyi Claude
     origin: https://yunyi.rdzhvip.com
@@ -101,11 +110,18 @@ upstreams:
     timeout_ms: 120000
     supported_models:
       - claude-opus-4-6
+      - claude-opus-4-5-20251101
+      - claude-opus-4-1-20250805
+      - claude-opus-4-20250514
+      - claude-sonnet-4-6
+      - claude-sonnet-4-5-20250929
+      - claude-sonnet-4-20250514
+      - claude-haiku-4-5-20251001
     model_aliases:
       claude: claude-opus-4-6
-      老金: claude-opus-4-6
-      laojin: claude-opus-4-6
-      "Agent 老金": claude-opus-4-6
+      opus: claude-opus-4-6
+      sonnet: claude-sonnet-4-6
+      haiku: claude-haiku-4-5-20251001
     capabilities:
       supports_responses: false
       supports_chat_completions: true

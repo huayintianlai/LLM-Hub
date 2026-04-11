@@ -37,5 +37,6 @@ CREATE TABLE IF NOT EXISTS upstream_states (
   success_count INTEGER DEFAULT 0,
   failure_count INTEGER DEFAULT 0,
   last_error TEXT,
+  last_failure_error TEXT,
   updated_at INTEGER NOT NULL
 );

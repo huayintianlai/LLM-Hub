@@ -973,8 +973,10 @@
         ready: '就绪',
         cooldown: '冷却',
         failures: '失败次数',
+        consecutive_failures: '连续失败',
         avg_latency_short: '平均延迟',
-        last_error: '最近错误',
+        last_failure: '最近失败',
+        last_error: '最近失败错误',
         last_success: '最近成功',
         route_passthrough: '直通',
         route_transform: '转换',
@@ -1021,6 +1023,7 @@
         requests_unit: '请求',
         tokens_unit: 'tokens',
         ms_unit: '毫秒',
+        seconds_unit: '秒',
         usd_unit: '美元',
         refresh_every: '每 15 秒自动刷新',
         unknown: '未知',
@@ -1073,8 +1076,10 @@
         ready: 'Ready',
         cooldown: 'Cooldown',
         failures: 'Failures',
+        consecutive_failures: 'Consecutive failures',
         avg_latency_short: 'Avg latency',
-        last_error: 'Last error',
+        last_failure: 'Last failure',
+        last_error: 'Last failure error',
         last_success: 'Last success',
         route_passthrough: 'Passthrough',
         route_transform: 'Transform',
@@ -1121,6 +1126,7 @@
         requests_unit: 'requests',
         tokens_unit: 'tokens',
         ms_unit: 'ms',
+        seconds_unit: 's',
         usd_unit: 'USD',
         refresh_every: 'Auto refresh every 15s',
         unknown: 'Unknown',
@@ -1178,12 +1184,39 @@
       if (value === null || value === undefined || Number.isNaN(Number(value))) {
         return '—';
       }
+      const numeric = Number(value);
+      const absolute = Math.abs(numeric);
+      let minimumFractionDigits = 2;
+      let maximumFractionDigits = 2;
+
+      if (absolute > 0 && absolute < 0.01) {
+        minimumFractionDigits = 4;
+        maximumFractionDigits = 6;
+      } else if (absolute < 1) {
+        minimumFractionDigits = 2;
+        maximumFractionDigits = 4;
+      }
+
       return new Intl.NumberFormat(state.lang === 'zh' ? 'zh-CN' : 'en-US', {
         style: 'currency',
         currency: 'USD',
-        minimumFractionDigits: 4,
-        maximumFractionDigits: 6,
-      }).format(Number(value));
+        minimumFractionDigits,
+        maximumFractionDigits,
+      }).format(numeric);
+    }
+
+    function formatAverageLatency(value) {
+      if (value === null || value === undefined || Number.isNaN(Number(value))) {
+        return '—';
+      }
+      return `${formatNumber(Number(value) / 1000, 1)} ${t('seconds_unit')}`;
+    }
+
+    function formatLatencySeconds(value) {
+      if (value === null || value === undefined || Number.isNaN(Number(value))) {
+        return '—';
+      }
+      return `${formatNumber(Number(value) / 1000, 1)} ${t('seconds_unit')}`;
     }
 
     function formatPercent(numerator, denominator) {
@@ -1521,7 +1554,7 @@
         },
         {
           label: t('average_latency'),
-          value: `${formatNumber(summary?.average_latency_ms || 0, 1)} ${t('ms_unit')}`,
+          value: formatAverageLatency(summary?.average_latency_ms || 0),
           meta: `${t('active_upstreams')}: ${formatNumber(activeUpstreams)}`,
         },
         {
@@ -1589,7 +1622,7 @@
             <div class="cell-secondary">${formatCurrency(row.cost_usd || 0)}</div>
           </div>
           <div>
-            <div class="cell-primary">${formatNumber(row.latency_ms || 0, 1)} ${t('ms_unit')}</div>
+            <div class="cell-primary">${formatLatencySeconds(row.latency_ms || 0)}</div>
             <div class="cell-secondary">${row.success ? t('req_success') : (row.error_type || t('req_failed'))}</div>
           </div>
         `;
@@ -1624,7 +1657,7 @@
           tokens_total: 0,
           total_cost_usd: 0,
         };
-        const successRate = stats.total_requests
+        const attemptSuccessRate = stats.total_requests
           ? formatPercent(stats.successful_requests || 0, stats.total_requests || 0)
           : '—';
 
@@ -1644,16 +1677,20 @@
               <strong>${formatRelativeCooldown(upstream.cooldown_until)}</strong>
             </div>
             <div class="metric-box">
-              <span>${t('failures')}</span>
+              <span>${t('consecutive_failures')}</span>
               <strong>${formatNumber(upstream.consecutive_failures || 0)}</strong>
             </div>
             <div class="metric-box">
               <span>${t('avg_latency_short')}</span>
-              <strong>${formatNumber(upstream.average_latency_ms || 0, 1)} ${t('ms_unit')}</strong>
+              <strong>${formatAverageLatency(upstream.average_latency_ms || 0)}</strong>
             </div>
             <div class="metric-box">
               <span>${t('last_success')}</span>
               <strong>${formatTimestamp(upstream.last_success_at)}</strong>
+            </div>
+            <div class="metric-box">
+              <span>${t('last_failure')}</span>
+              <strong>${formatTimestamp(upstream.last_failure_at)}</strong>
             </div>
             <div class="metric-box">
               <span>${t('upstream_requests')}</span>
@@ -1670,11 +1707,11 @@
           </div>
           <div>
             <div class="cell-secondary">${t('upstream_success_rate')}</div>
-            <div class="error-copy">${successRate}</div>
+            <div class="error-copy">${attemptSuccessRate}</div>
           </div>
           <div>
             <div class="cell-secondary">${t('last_error')}</div>
-            <div class="error-copy">${upstream.last_error || '—'}</div>
+            <div class="error-copy">${upstream.last_failure_error || '—'}</div>
           </div>
         `;
         root.appendChild(card);
