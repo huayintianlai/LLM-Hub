@@ -16,10 +16,11 @@ NC='\033[0m'
 # 测试计数
 TESTS_PASSED=0
 TESTS_FAILED=0
+LLMHUB_TEST_BEARER_TOKEN="${LLMHUB_TEST_BEARER_TOKEN:-local-test-token}"
 
 echo "测试配置:"
-echo "  - 优先级 1: quan2go (支持 /responses)"
-echo "  - 优先级 2: yunyi (仅支持 /chat/completions)"
+echo "  - 优先级 1: primary-openai-compatible (支持 /responses)"
+echo "  - 优先级 2: backup-openai-compatible (仅支持 /chat/completions)"
 echo "  - 故障阈值: 3 次失败"
 echo "  - 冷却时间: 60 秒"
 echo ""
@@ -59,7 +60,7 @@ for i in {1..3}; do
   echo -n "请求 $i/3: "
   response=$(curl -s -X POST http://localhost:4105/responses \
     -H "Content-Type: application/json" \
-    -H "Authorization: Bearer 3G6QUVPC-BKVB-1Z34-UY8E-R1TK6QHZ6N0F" \
+    -H "Authorization: Bearer ${LLMHUB_TEST_BEARER_TOKEN}" \
     -d "{\"model\":\"gpt-5.3-codex\",\"instructions\":\"Say: Test $i\",\"stream\":false}")
 
   if echo "$response" | jq -e '.output[0].content[0].text' > /dev/null 2>&1; then

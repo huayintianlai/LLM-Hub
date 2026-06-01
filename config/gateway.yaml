@@ -9,84 +9,68 @@ gateway:
         require_bearer: true
       routing_strategy: latency-first
     - port: 4106
-      app_name: kekebaby
-      description: KekeBaby dedicated port
+      app_name: app-a
+      description: Example app port for cost-sensitive traffic
       auth:
         require_bearer: false
       routing_strategy: cost-first
     - port: 4107
-      app_name: claude-code
-      description: Claude Code dedicated port
+      app_name: app-b
+      description: Example app port for balanced routing
       auth:
         require_bearer: false
       routing_strategy: balanced
     - port: 4000
       app_name: default
-      description: Default gateway port
+      description: Default OpenAI-compatible gateway port
       auth:
         require_bearer: false
       routing_strategy: balanced
 
 upstreams:
-  # quan2go：原生支持 /responses API
-  # 可用模型：gpt-5.4, gpt-5.3-codex
-  # 可容灾模型：gpt-5.4, gpt-5.3-codex（quan2go + yunyi 都支持）
-  # 下游可使用别名：gpt → gpt-5.4, codex → gpt-5.3-codex
-  - id: quan2go-gpt
-    name: Quan2go GPT
-    origin: https://capi.quan2go.com
-    responses_full_path: /openai/responses
+  # Primary provider with native Responses API support.
+  - id: primary-openai-compatible
+    name: Primary OpenAI-Compatible Provider
+    origin: https://primary.example.com
+    responses_full_path: /v1/responses
     chat_full_path: /v1/chat/completions
-    api_key: os.environ/GPT_KEY_B
+    api_key: os.environ/UPSTREAM_PRIMARY_API_KEY
     priority: 1
     timeout_ms: 120000
     supported_models:
-      - gpt-5.4
-      - gpt-5.3-codex
+      - codex-model
+      - general-model
     model_aliases:
-      gpt-5-codex: gpt-5.3-codex
-      codex: gpt-5.3-codex
-      gpt: gpt-5.4
+      codex: codex-model
+      gpt: general-model
     capabilities:
       supports_responses: true
       supports_chat_completions: true
-      responses_requires_stream: true
-      responses_always_streams: true
+      responses_requires_stream: false
+      responses_always_streams: false
       chat_requires_stream: false
-      chat_always_streams: true
+      chat_always_streams: false
       responses_event_format: standard
       chat_event_format: openai
     cost:
-      per_1k_prompt: 0.008
-      per_1k_completion: 0.024
+      per_1k_prompt: 0.01
+      per_1k_completion: 0.03
 
-  # yunyi：不支持 /responses，需要转换
-  # 可用模型：gpt-5.4, gpt-5.3, gpt-5.3-codex, gpt-5.2, gpt-5.2-codex, gpt-5.1-codex, gpt-5.1-codex-max, gpt-5.1-codex-mini, gpt-5.1, gpt-5-codex
-  # 可容灾模型：gpt-5.4, gpt-5.3-codex（quan2go + yunyi 都支持）
-  # 仅 yunyi 可用（无容灾）：gpt-5.3, gpt-5.2, gpt-5.2-codex, gpt-5.1-codex-max, gpt-5.1-codex, gpt-5.1-codex-mini, gpt-5.1, gpt-5-codex
-  # 下游可使用别名：gpt → gpt-5.4, codex → gpt-5.3-codex
-  - id: yunyi-gpt
-    name: Yunyi GPT
-    origin: https://yunyi.cfd
-    chat_full_path: /codex/v1/chat/completions
-    api_key: os.environ/GPT_KEY_A
+  # Backup provider that only supports Chat Completions. LLM-Hub can transform
+  # Responses API traffic when failover requires this route.
+  - id: backup-openai-compatible
+    name: Backup OpenAI-Compatible Provider
+    origin: https://backup.example.com
+    chat_full_path: /v1/chat/completions
+    api_key: os.environ/UPSTREAM_BACKUP_API_KEY
     priority: 2
     timeout_ms: 120000
     supported_models:
-      - gpt-5.4
-      - gpt-5.3
-      - gpt-5.3-codex
-      - gpt-5.2
-      - gpt-5.2-codex
-      - gpt-5.1-codex-max
-      - gpt-5.1-codex
-      - gpt-5.1-codex-mini
-      - gpt-5.1
-      - gpt-5-codex
+      - codex-model
+      - general-model
     model_aliases:
-      gpt-5-codex: gpt-5.3-codex
-      codex: gpt-5.3-codex
-      gpt: gpt-5.4
+      codex: codex-model
+      gpt: general-model
     capabilities:
       supports_responses: false
       supports_chat_completions: true
@@ -97,31 +81,21 @@ upstreams:
       per_1k_prompt: 0.01
       per_1k_completion: 0.03
 
-  # yunyi claude 渠道
-  # 可用模型：claude-opus-4-6, claude-sonnet-4-6, claude-haiku-4-5-20251001（及其他版本）
-  # 可容灾模型：无（仅 yunyi-claude 一个上游）
-  # 下游可使用别名：claude → claude-opus-4-6, opus → claude-opus-4-6, sonnet → claude-sonnet-4-6, haiku → claude-haiku-4-5-20251001
-  - id: yunyi-claude
-    name: Yunyi Claude
-    origin: https://yunyi.rdzhvip.com
-    chat_full_path: /claude/v1/chat/completions
-    api_key: os.environ/CLAUDE_KEY_A
-    priority: 1
+  # Optional third route for Claude-compatible model names exposed through an
+  # OpenAI-compatible Chat Completions endpoint.
+  - id: optional-claude-compatible
+    name: Optional Claude-Compatible Provider
+    origin: https://claude-compatible.example.com
+    chat_full_path: /v1/chat/completions
+    api_key: os.environ/UPSTREAM_CLAUDE_API_KEY
+    priority: 3
     timeout_ms: 120000
     supported_models:
-      - claude-opus-4-6
-      - claude-opus-4-5-20251101
-      - claude-opus-4-1-20250805
-      - claude-opus-4-20250514
-      - claude-sonnet-4-6
-      - claude-sonnet-4-5-20250929
-      - claude-sonnet-4-20250514
-      - claude-haiku-4-5-20251001
+      - claude-model
     model_aliases:
-      claude: claude-opus-4-6
-      opus: claude-opus-4-6
-      sonnet: claude-sonnet-4-6
-      haiku: claude-haiku-4-5-20251001
+      claude: claude-model
+      opus: claude-model
+      sonnet: claude-model
     capabilities:
       supports_responses: false
       supports_chat_completions: true
@@ -143,8 +117,8 @@ failover:
     exponential_backoff: true
   routing_strategy:
     codex-cli: latency-first
-    kekebaby: cost-first
-    claude-code: balanced
+    app-a: cost-first
+    app-b: balanced
     default: balanced
 
 database:
@@ -156,7 +130,7 @@ monitoring:
   dashboard_host: 0.0.0.0
   dashboard_port: 8080
   notifications:
-    enabled: true
+    enabled: false
     critical_only: true
     openclaw:
       gatewayUrl: ${OPENCLAW_GATEWAY_URL}

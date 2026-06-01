@@ -5,16 +5,20 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT_DIR"
 
-if [ -f "docs/.env" ]; then
+if [ -f ".env" ]; then
+  set -a
+  source .env
+  set +a
+elif [ -f "docs/.env" ]; then
   set -a
   source docs/.env
   set +a
 fi
 
-export GPT_KEY_B="${GPT_KEY_B:-}"
+export PASSTHROUGH_API_KEY="${PASSTHROUGH_API_KEY:-${UPSTREAM_PRIMARY_API_KEY:-${GPT_KEY_B:-}}}"
 
-if [ -z "$GPT_KEY_B" ]; then
-  echo "❌ GPT_KEY_B 未设置"
+if [ -z "$PASSTHROUGH_API_KEY" ]; then
+  echo "❌ PASSTHROUGH_API_KEY 未设置"
   exit 1
 fi
 

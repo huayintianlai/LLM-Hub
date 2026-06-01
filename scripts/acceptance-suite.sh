@@ -5,7 +5,11 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT_DIR"
 
-if [[ -f "docs/.env" ]]; then
+if [[ -f ".env" ]]; then
+  set -a
+  source .env
+  set +a
+elif [[ -f "docs/.env" ]]; then
   set -a
   source docs/.env
   set +a

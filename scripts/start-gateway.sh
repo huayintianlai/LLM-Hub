@@ -1,11 +1,16 @@
 #!/bin/bash
 set -euo pipefail
 
-# Load environment variables from docs/.env, if present
-ENV_FILE="$(pwd)/docs/.env"
+# Load environment variables from .env, with docs/.env kept as a legacy fallback.
+ENV_FILE="$(pwd)/.env"
+LEGACY_ENV_FILE="$(pwd)/docs/.env"
 if [[ -f "$ENV_FILE" ]]; then
   set -o allexport
   source "$ENV_FILE"
+  set +o allexport
+elif [[ -f "$LEGACY_ENV_FILE" ]]; then
+  set -o allexport
+  source "$LEGACY_ENV_FILE"
   set +o allexport
 fi
 

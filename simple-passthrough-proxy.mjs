@@ -1,19 +1,22 @@
 #!/usr/bin/env node
 
 /**
- * Simple Passthrough Proxy for quan2go /responses API
+ * Simple Passthrough Proxy for a native Responses API upstream.
  *
- * This is a minimal proxy that forwards requests from Codex CLI to quan2go
- * without any transformation. It's designed to validate that quan2go's native
- * /responses API support works correctly.
+ * This minimal proxy forwards Codex CLI Responses API requests to one upstream
+ * without transformation. The full gateway in gateway.mjs is recommended for
+ * normal use; this file is kept as a focused passthrough diagnostic.
  *
  * Usage:
- *   1. Set environment variable: export GPT_KEY_B="your-api-key"
- *   2. Run: node simple-passthrough-proxy.mjs
- *   3. Configure Codex CLI to use: http://127.0.0.1:4105
+ *   1. Set environment variable: export PASSTHROUGH_API_KEY="your-api-key"
+ *   2. Set PASSTHROUGH_ORIGIN and PASSTHROUGH_RESPONSES_PATH if needed
+ *   3. Run: node simple-passthrough-proxy.mjs
+ *   4. Configure Codex CLI to use: http://127.0.0.1:4105
  *
  * Environment Variables:
- *   - GPT_KEY_B: API key for quan2go (required)
+ *   - PASSTHROUGH_API_KEY: API key for the upstream (required)
+ *   - PASSTHROUGH_ORIGIN: upstream host, for example api.example.com
+ *   - PASSTHROUGH_RESPONSES_PATH: upstream Responses API path
  *
  * Features:
  *   - Zero transformation (complete passthrough)
@@ -31,14 +34,14 @@ loadEnvFiles();
 // Configuration
 const LISTEN_HOST = '127.0.0.1';
 const LISTEN_PORT = 4105;
-const QUAN2GO_ORIGIN = 'capi.quan2go.com';
-const RESPONSES_FULL_PATH = '/openai/responses';
+const PASSTHROUGH_ORIGIN = process.env.PASSTHROUGH_ORIGIN || 'api.example.com';
+const RESPONSES_FULL_PATH = process.env.PASSTHROUGH_RESPONSES_PATH || '/v1/responses';
 const REQUEST_TIMEOUT = 120000; // 2 minutes
 
 // Validate environment
-const API_KEY = process.env.GPT_KEY_B;
+const API_KEY = process.env.PASSTHROUGH_API_KEY || process.env.UPSTREAM_PRIMARY_API_KEY || process.env.GPT_KEY_B;
 if (!API_KEY) {
-  console.error('[ERROR] Environment variable GPT_KEY_B is not set');
+  console.error('[ERROR] Environment variable PASSTHROUGH_API_KEY is not set');
   process.exit(1);
 }
 
@@ -93,12 +96,12 @@ const server = http.createServer((req, res) => {
 
   log('INFO', 'Forwarding to upstream', {
     requestId,
-    upstream: `https://${QUAN2GO_ORIGIN}${upstreamPath}`
+    upstream: `https://${PASSTHROUGH_ORIGIN}${upstreamPath}`
   });
 
   // Prepare upstream request options
   const upstreamOptions = {
-    hostname: QUAN2GO_ORIGIN,
+    hostname: PASSTHROUGH_ORIGIN,
     port: 443,
     path: upstreamPath,
     method: 'POST',

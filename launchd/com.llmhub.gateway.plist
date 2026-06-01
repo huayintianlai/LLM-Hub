@@ -8,14 +8,14 @@
     <array>
       <string>/bin/bash</string>
       <string>-lc</string>
-      <string>cd /Users/KenSir/Documents/coding/AIWorkSpace/LLM-Hub && ./scripts/start-gateway.sh</string>
+      <string>cd /path/to/LLM-Hub && ./scripts/start-gateway.sh</string>
     </array>
     <key>WorkingDirectory</key>
-    <string>/Users/KenSir/Documents/coding/AIWorkSpace/LLM-Hub</string>
+    <string>/path/to/LLM-Hub</string>
     <key>StandardOutPath</key>
-    <string>/Users/KenSir/Documents/coding/AIWorkSpace/LLM-Hub/logs/gateway.log</string>
+    <string>/path/to/LLM-Hub/logs/gateway.log</string>
     <key>StandardErrorPath</key>
-    <string>/Users/KenSir/Documents/coding/AIWorkSpace/LLM-Hub/logs/gateway.log</string>
+    <string>/path/to/LLM-Hub/logs/gateway.log</string>
     <key>RunAtLoad</key>
     <true/>
     <key>KeepAlive</key>
@@ -23,7 +23,7 @@
     <key>EnvironmentVariables</key>
     <dict>
       <key>LLMHUB_ENV_FILE</key>
-      <string>docs/.env</string>
+      <string>.env</string>
     </dict>
   </dict>
 </plist>

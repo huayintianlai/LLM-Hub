@@ -64,10 +64,10 @@ if [ -f "simple-passthrough-proxy.mjs" ]; then
     fi
 
     # 检查是否使用了环境变量
-    if grep -q "process.env.GPT_KEY_B" simple-passthrough-proxy.mjs; then
-        check_pass "使用了环境变量 GPT_KEY_B"
+    if grep -q "process.env.PASSTHROUGH_API_KEY" simple-passthrough-proxy.mjs; then
+        check_pass "使用了环境变量 PASSTHROUGH_API_KEY"
     else
-        check_fail "没有使用环境变量 GPT_KEY_B"
+        check_fail "没有使用环境变量 PASSTHROUGH_API_KEY"
     fi
 
     # 检查是否有错误处理

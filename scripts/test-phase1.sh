@@ -1,11 +1,15 @@
 #!/bin/bash
 
 # Phase 1 Test Script
-# Tests the simple-passthrough-proxy.mjs to verify it works correctly
+# Tests the simple-passthrough-proxy.mjs diagnostic proxy.
 
 set -e
 
-if [ -f "docs/.env" ]; then
+if [ -f ".env" ]; then
+    set -a
+    source .env
+    set +a
+elif [ -f "docs/.env" ]; then
     set -a
     source docs/.env
     set +a
@@ -55,14 +59,17 @@ trap cleanup EXIT
 
 # 1. Check environment variable
 echo "1. Checking environment..."
-if [ -z "$GPT_KEY_B" ]; then
-    test_fail "Environment variable GPT_KEY_B is not set"
+PASSTHROUGH_API_KEY="${PASSTHROUGH_API_KEY:-${UPSTREAM_PRIMARY_API_KEY:-${GPT_KEY_B:-}}}"
+export PASSTHROUGH_API_KEY
+
+if [ -z "$PASSTHROUGH_API_KEY" ]; then
+    test_fail "Environment variable PASSTHROUGH_API_KEY is not set"
     echo ""
-    echo "Please set GPT_KEY_B:"
-    echo "  export GPT_KEY_B=\"your-api-key\""
+    echo "Please set PASSTHROUGH_API_KEY:"
+    echo "  export PASSTHROUGH_API_KEY=\"your-api-key\""
     exit 1
 else
-    test_pass "Environment variable GPT_KEY_B is set"
+    test_pass "Environment variable PASSTHROUGH_API_KEY is set"
 fi
 
 echo ""

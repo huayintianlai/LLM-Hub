@@ -1,14 +1,18 @@
 #!/bin/bash
 
-# 测试 GPT 渠道是否可用
+# Test OpenAI-compatible upstream API keys.
 
 echo "=========================================="
-echo "测试 GPT 渠道"
+echo "测试 OpenAI-compatible 上游"
 echo "=========================================="
 echo ""
 
-# 加载环境变量
-source .env
+if [ -f ".env" ]; then
+    source .env
+fi
+
+UPSTREAM_TEST_CHAT_URL="${UPSTREAM_TEST_CHAT_URL:-https://backup.example.com/v1/chat/completions}"
+UPSTREAM_TEST_MODEL="${UPSTREAM_TEST_MODEL:-general-model}"
 
 # 测试函数
 test_key() {
@@ -17,17 +21,17 @@ test_key() {
 
     echo "测试 $key_name..."
 
-    if [[ "$key_value" == "sk-"* ]]; then
+    if [[ -z "$key_value" ]] || [[ "$key_value" == replace-with-* ]] || [[ "$key_value" == "sk-"* ]]; then
         echo "  ⏭️  跳过（占位符）"
         echo ""
         return
     fi
 
     # 测试简单的 chat/completions 端点
-    response=$(curl -s -w "\n%{http_code}" -X POST https://yunyi.cfd/codex/v1/chat/completions \
+    response=$(curl -s -w "\n%{http_code}" -X POST "$UPSTREAM_TEST_CHAT_URL" \
         -H "Content-Type: application/json" \
         -H "Authorization: Bearer $key_value" \
-        -d '{"model":"gpt-5.4","messages":[{"role":"user","content":"hi"}],"stream":false}' \
+        -d "{\"model\":\"$UPSTREAM_TEST_MODEL\",\"messages\":[{\"role\":\"user\",\"content\":\"hi\"}],\"stream\":false}" \
         2>&1)
 
     http_code=$(echo "$response" | tail -n 1)
@@ -48,7 +52,9 @@ test_key() {
     echo ""
 }
 
-# 测试所有 GPT keys
+# Test common compatibility aliases and generic upstream keys.
+test_key "UPSTREAM_PRIMARY_API_KEY" "${UPSTREAM_PRIMARY_API_KEY:-}"
+test_key "UPSTREAM_BACKUP_API_KEY" "${UPSTREAM_BACKUP_API_KEY:-}"
 test_key "GPT_KEY_A" "$GPT_KEY_A"
 test_key "GPT_KEY_B" "$GPT_KEY_B"
 test_key "GPT_KEY_C" "$GPT_KEY_C"
@@ -58,5 +64,5 @@ echo "=========================================="
 echo "测试完成"
 echo "=========================================="
 echo ""
-echo "当前 codex_proxy.mjs 使用: GPT_KEY_A"
-echo "如需切换渠道，修改 codex_proxy.mjs 第 22 行"
+echo "测试 URL: $UPSTREAM_TEST_CHAT_URL"
+echo "测试模型: $UPSTREAM_TEST_MODEL"

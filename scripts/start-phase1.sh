@@ -5,7 +5,11 @@
 
 set -e
 
-if [ -f "docs/.env" ]; then
+if [ -f ".env" ]; then
+  set -a
+  source .env
+  set +a
+elif [ -f "docs/.env" ]; then
   set -a
   source docs/.env
   set +a
@@ -17,15 +21,18 @@ echo "=========================================="
 echo ""
 
 # Check environment variable
-if [ -z "$GPT_KEY_B" ]; then
-    echo "❌ Error: Environment variable GPT_KEY_B is not set"
+PASSTHROUGH_API_KEY="${PASSTHROUGH_API_KEY:-${UPSTREAM_PRIMARY_API_KEY:-${GPT_KEY_B:-}}}"
+export PASSTHROUGH_API_KEY
+
+if [ -z "$PASSTHROUGH_API_KEY" ]; then
+    echo "❌ Error: Environment variable PASSTHROUGH_API_KEY is not set"
     echo ""
-    echo "Please set GPT_KEY_B:"
-    echo "  export GPT_KEY_B=\"your-api-key\""
+    echo "Please set PASSTHROUGH_API_KEY:"
+    echo "  export PASSTHROUGH_API_KEY=\"your-api-key\""
     exit 1
 fi
 
-echo "✅ Environment variable GPT_KEY_B is set"
+echo "✅ Environment variable PASSTHROUGH_API_KEY is set"
 
 # Check if required ports are already in use
 for port in 4000 4105 4106 4107 8080; do

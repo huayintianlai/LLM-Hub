@@ -17,7 +17,7 @@
 
 ## Troubleshooting
 - If the gateway fails to start, inspect `logs/gateway.log` for stack traces or missing env vars.
-- Check `docs/.env` for expired API keys; rotate them and restart the service.
+- Check `.env` for expired API keys; rotate them and restart the service.
 - Use `curl http://127.0.0.1:4000/status` to see which upstream is currently in cooldown.
 - For container deployments, `docker compose logs gateway` and `docker compose exec gateway ./scripts/health-check.sh` provide quick diagnostics.
 

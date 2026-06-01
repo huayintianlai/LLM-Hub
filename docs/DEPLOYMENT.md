@@ -1,34 +1,75 @@
 # Deployment Guide
 
 ## Prerequisites
-- Node.js 24+ (tested with `node --version`)
-- `npm ci` (will install dependencies defined in `package.json`)
-- Access to the `docs/.env` file for API keys and secrets
+
+- Node.js 24+
+- `npm ci`
+- OpenAI-compatible upstream API keys
 - Ports `4000`, `4105`, `4106`, `4107`, and `8080` available on the host
 
 ## Environment
-1. Copy `docs/.env.example` to `docs/.env` and fill in the required API keys.
-2. Confirm `config/gateway.yaml` points at the correct upstream origins (usually `quan2go` and `yunyi`).
+
+1. Copy `.env.example` to `.env`.
+2. Set `UPSTREAM_PRIMARY_API_KEY`, `UPSTREAM_BACKUP_API_KEY`, and optional notification values.
+3. Edit `config/gateway.yaml` so each upstream `origin`, endpoint path, model list, and capability declaration matches your providers.
+4. Keep `.env`, logs, databases, and run state out of git.
 
 ## Local Deployment
-1. Run `./scripts/start-gateway.sh` to launch the gateway. Logs stream to `logs/gateway.log`.
-2. Use `./scripts/health-check.sh` to verify `http://127.0.0.1:4000/health` responds.
-3. Stop the gateway with `./scripts/stop-gateway.sh`.
-4. Rotate logs on demand with `./scripts/rotate-logs.sh` or hook into cron.
+
+1. Run `npm ci`.
+2. Run `./scripts/start-gateway.sh` to launch the gateway.
+3. Use `./scripts/health-check.sh` to verify `http://127.0.0.1:4000/health`.
+4. Open `http://localhost:8080` for the dashboard.
+5. Stop the gateway with `./scripts/stop-gateway.sh`.
 
 ## Containerized Deployment
-1. Build the image: `docker build -t llm-hub-gateway .`
-2. Start via Compose: `docker compose up -d`.
-3. Compose mounts `config/` and `docs/.env` read-only and exposes the gateway ports (4000, 4105-4107, 8080).
-4. Check logs with `docker compose logs -f gateway` and tear down with `docker compose down`.
+
+1. Copy `.env.example` to `.env` and fill in local values.
+2. Build and start:
+
+```bash
+docker compose up -d --build
+```
+
+3. Check logs:
+
+```bash
+docker compose logs -f gateway
+```
+
+4. Tear down:
+
+```bash
+docker compose down
+```
+
+The Docker build context excludes local `.env`, databases, logs, and run state. Runtime configuration is injected through Compose `env_file` and mounted volumes.
+
+## Codex CLI
+
+Point Codex CLI at the dedicated Responses API listener:
+
+```toml
+[model_providers.llmhub]
+name = "llmhub"
+base_url = "http://127.0.0.1:4105"
+wire_api = "responses"
+requires_openai_auth = true
+experimental_bearer_token = "local-test-token"
+```
+
+Use a real local bearer token for shared machines or long-running deployments.
 
 ## launchd (macOS)
+
 1. Copy `launchd/com.llmhub.gateway.plist` to `~/Library/LaunchAgents/`.
-2. Adjust the `ProgramArguments` path if the repository lives somewhere else.
+2. Adjust paths in the plist for your repository location.
 3. Load with `launchctl load ~/Library/LaunchAgents/com.llmhub.gateway.plist`.
-4. Unload with `launchctl unload ...` before updating the plist.
+4. Unload before edits with `launchctl unload ~/Library/LaunchAgents/com.llmhub.gateway.plist`.
 
 ## Production Notes
-- Keep `logs/` and `run/` directories writable by the service user.
-- The gateway uses `config/gateway.yaml` for listener and upstream details: editing it requires a gateway restart.
-- For zero-downtime upgrades, stop the service (`stop-gateway.sh`), pull new code, reinstall dependencies, then start again.
+
+- Keep upstream secrets only in `.env` or your secret manager.
+- Confirm every provider capability in `config/gateway.yaml`; incorrect streaming declarations can break passthrough behavior.
+- Rotate logs outside the repo, for example into `/var/log/llm-hub/`.
+- Run `npm test` before upgrading a deployed gateway.
