@@ -50,8 +50,8 @@ The Docker build context excludes local `.env`, databases, logs, and run state. 
 Point Codex CLI at the dedicated Responses API listener:
 
 ```toml
-[model_providers.llmhub]
-name = "llmhub"
+[model_providers.llmfailsafe]
+name = "llmfailsafe"
 base_url = "http://127.0.0.1:4105"
 wire_api = "responses"
 requires_openai_auth = true
@@ -62,14 +62,14 @@ Use a real local bearer token for shared machines or long-running deployments.
 
 ## launchd (macOS)
 
-1. Copy `launchd/com.llmhub.gateway.plist` to `~/Library/LaunchAgents/`.
+1. Copy `launchd/com.llmfailsafe.gateway.plist` to `~/Library/LaunchAgents/`.
 2. Adjust paths in the plist for your repository location.
-3. Load with `launchctl load ~/Library/LaunchAgents/com.llmhub.gateway.plist`.
-4. Unload before edits with `launchctl unload ~/Library/LaunchAgents/com.llmhub.gateway.plist`.
+3. Load with `launchctl load ~/Library/LaunchAgents/com.llmfailsafe.gateway.plist`.
+4. Unload before edits with `launchctl unload ~/Library/LaunchAgents/com.llmfailsafe.gateway.plist`.
 
 ## Production Notes
 
 - Keep upstream secrets only in `.env` or your secret manager.
 - Confirm every provider capability in `config/gateway.yaml`; incorrect streaming declarations can break passthrough behavior.
-- Rotate logs outside the repo, for example into `/var/log/llm-hub/`.
+- Rotate logs outside the repo, for example into `/var/log/llm-failsafe/`.
 - Run `npm test` before upgrading a deployed gateway.

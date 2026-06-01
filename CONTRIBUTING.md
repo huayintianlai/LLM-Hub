@@ -1,6 +1,6 @@
-# Contributing to LLM-Hub
+# Contributing to LLM-Failsafe
 
-Thanks for helping improve LLM-Hub. The project aims to stay local-first, provider-neutral, and safe to run with private upstream credentials.
+Thanks for helping improve LLM-Failsafe. The project aims to stay local-first, provider-neutral, and safe to run with private upstream credentials.
 
 The most valuable contributions are compatibility reports, regression tests, provider-neutral configuration examples, dashboard/observability improvements, and fixes that make local deployments safer.
 
@@ -40,4 +40,4 @@ Please include:
 - expected behavior and actual response/error
 - a redacted request/response sample if available
 
-Compatibility reports are especially useful because they help LLM-Hub document the practical differences between OpenAI-compatible providers without hard-coding one provider's behavior as the default.
+Compatibility reports are especially useful because they help LLM-Failsafe document the practical differences between OpenAI-compatible providers without hard-coding one provider's behavior as the default.

@@ -1,10 +1,10 @@
 <div align="center">
 
-# LLM-Hub
+# LLM-Failsafe
 
-**面向 Codex CLI 和 OpenAI-compatible AI 编程代理的本地兼容层、故障转移层和用量可观测层**
+**故障转移、高速路由、多模型混搭 — 为 AI 编程工具提供唯一稳定入口。**
 
-[![CI](https://github.com/huayintianlai/LLM-Hub/actions/workflows/ci.yml/badge.svg)](https://github.com/huayintianlai/LLM-Hub/actions/workflows/ci.yml)
+[![CI](https://github.com/huayintianlai/LLM-Failsafe/actions/workflows/ci.yml/badge.svg)](https://github.com/huayintianlai/LLM-Failsafe/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D24-brightgreen.svg)](https://nodejs.org/)
 [![Docker](https://img.shields.io/badge/docker-compose-2496ED.svg?logo=docker&logoColor=white)](#docker-部署)
@@ -16,32 +16,37 @@
 
 ---
 
-LLM-Hub 让本地 AI 编程工具只连接**一个稳定入口**，由网关把请求路由到多个上游。项目同时支持 `/responses` 和 `/chat/completions`：如果上游原生支持 Responses API 就直通；如果备用上游只支持 Chat Completions，就在故障转移时自动转换协议。
+LLM-Failsafe 是一个本地网关，部署在你的 AI 编程工具和上游 LLM 供应商之间。它只做三件事：
 
-> **项目状态** — LLM-Hub 按开发者基础设施来维护，而不是一次性的代理脚本。仓库包含自动化测试、Docker 和本地部署路径、上游兼容性 issue 模板、release checklist、安全说明和公开路线图。
+| | | |
+|---|---|---|
+| **故障转移** | 上游挂了自动切换 — 熔断器、健康监控、协议自动适配，你的工具不用停。 |
+| **高速路由** | 每个请求自动选最快的上游线路，延迟优先策略让响应更快、体验更顺畅。 |
+| **多模型混搭** | 一个入口背后可以挂多个供应商、多个模型。主力模型跑高频请求，便宜模型接溢出和降级 — 下游感知不到拓扑变化，始终平稳、快速。 |
 
-## 为什么选择 LLM-Hub
+> **项目状态** — LLM-Failsafe 按开发者基础设施来维护，而不是一次性的代理脚本。仓库包含自动化测试、Docker 和本地部署路径、上游兼容性 issue 模板、release checklist、安全说明和公开路线图。
 
-越来越多 AI 编程工具使用 OpenAI-compatible API，但真实上游在 Responses API、Chat Completions、流式行为、模型别名、usage 元数据和失败模式上并不完全一致。LLM-Hub 处在这个缝隙里：它给本地客户端一个稳定契约，把上游差异收敛到能力声明、路由策略和可观测性里。
+## 为什么选择 LLM-Failsafe
+
+越来越多 AI 编程工具使用 OpenAI-compatible API，但真实上游在可用性、延迟、Responses API 支持、流式行为、模型别名和失败模式上差异很大。LLM-Failsafe 处在这个缝隙里：它给本地客户端一个稳定契约，把上游差异收敛到能力声明、路由策略和可观测性里。
 
 ### 核心能力
 
 | 能力 | 说明 |
 |---|---|
-| **多应用网关** | 为 Codex CLI、不同应用、通用客户端提供独立端口和路由策略 |
-| **Codex CLI 原生支持** | `4105` 端口提供 `/responses` API + Bearer token 认证 |
-| **智能故障转移** | 优先级路由、动态路由、被动健康监控、指数退避熔断器 |
-| **协议自动适配** | Responses API 直通；故障转移时自动转换为 Chat Completions |
-| **用量可观测性** | 实时 Dashboard：Token 趋势图、成本趋势、按应用消耗分析 |
-| **路由策略** | `latency-first`、`cost-first`、`balanced` — 按端口独立配置 |
-| **本地优先** | Node.js、Docker Compose、macOS launchd 模板和生命周期脚本 |
-| **双语 Dashboard** | 中英文一键切换 |
+| **故障转移与熔断** | 自动切换备用上游，指数退避熔断器、被动健康监控、协议自动适配（Responses ↔ Chat Completions） |
+| **延迟优先路由** | 每个请求自动选最快可用上游 — 按端口独立配置 `latency-first`、`cost-first`、`balanced` |
+| **多模型混搭** | 一个入口接入多供应商多模型，快模型 + 便宜模型 + 高能力模型混合调度 |
+| **Codex CLI 原生** | `4105` 端口独立 `/responses` API，支持 Bearer token 认证 |
+| **多应用网关** | 不同客户端工具分配独立端口和路由策略 |
+| **实时 Dashboard** | Token 用量、成本核算、趋势图表、上游健康、按应用拆分的消耗分析 |
+| **本地优先** | Node.js、Docker Compose、macOS launchd — 不依赖任何云服务 |
 
 ## 快速开始
 
 ```bash
-git clone https://github.com/huayintianlai/LLM-Hub.git
-cd LLM-Hub
+git clone https://github.com/huayintianlai/LLM-Failsafe.git
+cd LLM-Failsafe
 cp .env.example .env
 npm ci
 ```
@@ -63,11 +68,11 @@ open http://localhost:8080
 
 ## Dashboard 用量可观测性
 
-LLM-Hub 自带**实时 Web Dashboard**，用于日常运维和成本管理。当多个本地 AI 工具共用同一组上游预算时，可以很快看出是哪一个应用、模型、路由或 provider 在产生流量。
+LLM-Failsafe 自带**实时 Web Dashboard**，用于日常运维和成本管理。当多个本地 AI 工具共用同一组上游预算时，可以很快看出是哪一个应用、模型、路由或 provider 在产生流量。
 
 <div align="center">
 
-![LLM-Hub dashboard 展示 Token 用量、成本、上游状态和最近请求](docs/dashboard-overview.png)
+![LLM-Failsafe dashboard 展示 Token 用量、成本、上游状态和最近请求](docs/dashboard-overview.png)
 
 </div>
 
@@ -138,7 +143,7 @@ Docker 构建上下文会排除本地 `.env`、数据库、日志和运行态目
 
 ## 兼容客户端
 
-LLM-Hub 支持**任何使用 OpenAI-compatible API 的工具**。每个客户端可以分配独立端口和路由策略，实现独立的故障转移、成本追踪和可观测性。
+LLM-Failsafe 支持**任何使用 OpenAI-compatible API 的工具**。每个客户端可以分配独立端口和路由策略，实现独立的故障转移、成本追踪和可观测性。
 
 | 客户端 | 协议 | 示例端口 | 配置方式 |
 |---|---|---|---|
@@ -155,8 +160,8 @@ LLM-Hub 支持**任何使用 OpenAI-compatible API 的工具**。每个客户端
 ### Codex CLI 配置
 
 ```toml
-[model_providers.llmhub]
-name = "llmhub"
+[model_providers.llmfailsafe]
+name = "llmfailsafe"
 base_url = "http://127.0.0.1:4105"
 wire_api = "responses"
 requires_openai_auth = true
@@ -207,7 +212,7 @@ graph LR
         D[Cursor / Aider / ... :4000]
     end
 
-    subgraph LLM-Hub 网关
+    subgraph LLM-Failsafe 网关
         E[多端口监听]
         F{协议检测}
         G[路由规划]

@@ -1,5 +1,10 @@
 # Changelog
 
+## Rename to LLM-Failsafe
+
+- Renamed project from LLM-Hub to LLM-Failsafe to better reflect core value: failover, fast routing, and multi-model blending.
+- Rewrote README (English and Chinese) to highlight the three-pillar value proposition.
+
 ## 0.1.0 - Initial OSS Release
 
 - Added a local OpenAI-compatible gateway for `/responses` and `/chat/completions`.

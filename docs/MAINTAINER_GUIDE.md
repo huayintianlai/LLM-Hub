@@ -1,6 +1,6 @@
 # Maintainer Guide
 
-This guide describes how LLM-Hub maintainers evaluate changes, compatibility reports, and releases. It is meant to keep the project predictable as more providers, clients, and deployment patterns are added.
+This guide describes how LLM-Failsafe maintainers evaluate changes, compatibility reports, and releases. It is meant to keep the project predictable as more providers, clients, and deployment patterns are added.
 
 ## Maintenance Priorities
 

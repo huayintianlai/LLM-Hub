@@ -1,6 +1,6 @@
 # Roadmap
 
-LLM-Hub is early but already useful for local AI tooling. The project is maintained around a clear ecosystem need: OpenAI-compatible clients and providers do not always agree on Responses API support, streaming semantics, model naming, usage metadata, or failure behavior. Near-term work focuses on making that compatibility layer easier to adopt, safer to configure, and easier to validate across providers.
+LLM-Failsafe is early but already useful for local AI tooling. The project is maintained around a clear ecosystem need: OpenAI-compatible clients and providers do not always agree on Responses API support, streaming semantics, model naming, usage metadata, or failure behavior. Near-term work focuses on making that compatibility layer easier to adopt, safer to configure, and easier to validate across providers.
 
 ## Maintenance Principles
 
@@ -24,4 +24,4 @@ LLM-Hub is early but already useful for local AI tooling. The project is maintai
 - Add configuration validation with actionable startup errors.
 - Add optional Prometheus metrics export.
 - Add packaged release artifacts for common local deployment patterns.
-- Add more examples for running LLM-Hub behind a local reverse proxy.
+- Add more examples for running LLM-Failsafe behind a local reverse proxy.

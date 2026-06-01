@@ -16,7 +16,7 @@ assignees: ""
 - Usage metadata present: yes / no / unknown
 - Error format, if relevant:
 
-## LLM-Hub configuration
+## LLM-Failsafe configuration
 
 Please paste a redacted upstream config block.
 
@@ -24,7 +24,7 @@ Please paste a redacted upstream config block.
 
 - Client name:
 - Request protocol:
-- LLM-Hub listener port:
+- LLM-Failsafe listener port:
 - Route mode, if known:
 
 ## Expected behavior

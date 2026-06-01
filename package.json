@@ -1,17 +1,17 @@
 {
-  "name": "llm-hub",
+  "name": "llm-failsafe",
   "version": "0.1.0",
   "type": "module",
   "description": "OpenAI-compatible local LLM gateway with Codex CLI support, multi-upstream failover, and observability.",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/huayintianlai/LLM-Hub.git"
+    "url": "git+https://github.com/huayintianlai/LLM-Failsafe.git"
   },
   "bugs": {
-    "url": "https://github.com/huayintianlai/LLM-Hub/issues"
+    "url": "https://github.com/huayintianlai/LLM-Failsafe/issues"
   },
-  "homepage": "https://github.com/huayintianlai/LLM-Hub#readme",
+  "homepage": "https://github.com/huayintianlai/LLM-Failsafe#readme",
   "keywords": [
     "llm-gateway",
     "openai-compatible",

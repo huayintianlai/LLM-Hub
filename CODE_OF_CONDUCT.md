@@ -2,7 +2,7 @@
 
 ## Our Pledge
 
-We want LLM-Hub to be a practical, welcoming open-source project for people building local AI tooling. Contributors and maintainers are expected to be respectful, constructive, and considerate.
+We want LLM-Failsafe to be a practical, welcoming open-source project for people building local AI tooling. Contributors and maintainers are expected to be respectful, constructive, and considerate.
 
 ## Expected Behavior
 

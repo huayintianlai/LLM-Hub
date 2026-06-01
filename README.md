@@ -1,47 +1,52 @@
 <div align="center">
 
-# LLM-Hub
+# LLM-Failsafe
 
-**Local compatibility, failover, and observability gateway for Codex CLI and OpenAI-compatible AI coding agents.**
+**Failover. Speed. Multi-model blending. One stable endpoint for AI coding tools.**
 
-[![CI](https://github.com/huayintianlai/LLM-Hub/actions/workflows/ci.yml/badge.svg)](https://github.com/huayintianlai/LLM-Hub/actions/workflows/ci.yml)
+[![CI](https://github.com/huayintianlai/LLM-Failsafe/actions/workflows/ci.yml/badge.svg)](https://github.com/huayintianlai/LLM-Failsafe/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D24-brightgreen.svg)](https://nodejs.org/)
 [![Docker](https://img.shields.io/badge/docker-compose-2496ED.svg?logo=docker&logoColor=white)](#docker)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
-[English](#why-llm-hub) · [中文](README.zh-CN.md) · [Documentation](#documentation) · [Contributing](CONTRIBUTING.md) · [Roadmap](ROADMAP.md)
+[English](#why-llm-failsafe) · [中文](README.zh-CN.md) · [Documentation](#documentation) · [Contributing](CONTRIBUTING.md) · [Roadmap](ROADMAP.md)
 
 </div>
 
 ---
 
-LLM-Hub gives local AI coding tools **one stable endpoint** while it routes requests across multiple upstream providers. It supports both `/responses` and `/chat/completions`, can pass through native Responses API traffic when a provider supports it, and can transform Responses requests to Chat Completions when failover needs a compatible backup.
+LLM-Failsafe is a local gateway between your AI coding tools and upstream LLM providers. It does three things:
 
-> **Project Status** — LLM-Hub is maintained as developer infrastructure, not a one-off proxy script. The repository includes automated tests, Docker and local deployment paths, issue templates for upstream compatibility reports, a release checklist, security guidance, and a public roadmap.
+| | | |
+|---|---|---|
+| **Failover** | Automatic fallback when providers fail — circuit breakers, health tracking, and protocol adaptation keep your tools running without manual intervention. |
+| **Faster routing** | Latency-first routing sends each request to the fastest available upstream, cutting response times without sacrificing reliability. |
+| **Multi-model blending** | Mix providers and models behind one endpoint. Primary traffic hits your fastest model; overflow and fallback hit cheaper or different ones — downstream clients get a smooth, fast experience without knowing the topology. |
 
-## Why LLM-Hub
+> **Project Status** — LLM-Failsafe is maintained as developer infrastructure, not a one-off proxy script. The repository includes automated tests, Docker and local deployment paths, issue templates for upstream compatibility reports, a release checklist, security guidance, and a public roadmap.
 
-AI coding tools increasingly speak OpenAI-compatible APIs, but real-world providers differ in Responses API support, Chat Completions behavior, streaming semantics, model aliases, usage metadata, and failure modes. LLM-Hub sits in that gap — it gives local clients a stable contract while isolating provider-specific behavior behind capability declarations, routing policy, and observability.
+## Why LLM-Failsafe
+
+AI coding tools speak OpenAI-compatible APIs, but real-world providers differ in uptime, latency, Responses API support, streaming semantics, model aliases, and failure modes. LLM-Failsafe sits in that gap: it gives local clients a stable contract while isolating provider-specific behavior behind capability declarations, routing policy, and observability.
 
 ### Key Features
 
 | Feature | Description |
 |---|---|
-| **Multi-App Gateway** | Dedicated ports for Codex CLI, app-specific traffic, and generic OpenAI-compatible clients |
-| **Codex CLI Native** | `/responses` API listener with bearer-token auth on port `4105` |
-| **Smart Failover** | Priority routing, dynamic routing, passive health tracking, circuit breaker with exponential backoff |
-| **Protocol Adaptation** | Passthrough for native Responses API; auto-transform to Chat Completions on failover |
-| **Usage Observability** | Real-time dashboard with token tracking, cost accounting, trend charts, and per-app breakdown |
-| **Routing Strategies** | `latency-first`, `cost-first`, and `balanced` — configurable per listener port |
-| **Local-First** | Node.js, Docker Compose, macOS launchd templates, and lifecycle scripts |
-| **Bilingual Dashboard** | Full Chinese/English UI with one-click language switching |
+| **Failover & Circuit Breaker** | Automatic fallback with exponential backoff, passive health tracking, and protocol adaptation (Responses ↔ Chat Completions) |
+| **Latency-first routing** | Each request is routed to the fastest available upstream — configurable per port as `latency-first`, `cost-first`, or `balanced` |
+| **Multi-model blending** | Run multiple providers and models behind one endpoint; mix fast + cheap + high-capability models for different traffic |
+| **Codex CLI native** | Dedicated `/responses` API listener on port `4105` with bearer-token auth |
+| **Multi-app gateway** | Independent ports and routing strategies per client tool |
+| **Real-time dashboard** | Token tracking, cost accounting, trend charts, upstream health, and per-app breakdown |
+| **Local-first** | Node.js, Docker Compose, macOS launchd — no cloud dependency |
 
 ## Quick Start
 
 ```bash
-git clone https://github.com/huayintianlai/LLM-Hub.git
-cd LLM-Hub
+git clone https://github.com/huayintianlai/LLM-Failsafe.git
+cd LLM-Failsafe
 cp .env.example .env
 npm ci
 ```
@@ -68,11 +73,11 @@ open http://localhost:8080
 
 ## Dashboard & Usage Observability
 
-LLM-Hub ships with a **real-time web dashboard** for day-to-day operations and cost management. When multiple AI tools share the same upstream budget, the dashboard shows exactly which app, model, route, or provider is driving traffic.
+LLM-Failsafe ships with a **real-time web dashboard** for day-to-day operations and cost management. When multiple AI tools share the same upstream budget, the dashboard shows exactly which app, model, route, or provider is driving traffic.
 
 <div align="center">
 
-![LLM-Hub dashboard showing token usage, cost, upstream state, and recent requests](docs/dashboard-overview.png)
+![LLM-Failsafe dashboard showing token usage, cost, upstream state, and recent requests](docs/dashboard-overview.png)
 
 </div>
 
@@ -143,7 +148,7 @@ The Docker build excludes local `.env`, databases, logs, and runtime state. Secr
 
 ## Compatible Clients
 
-LLM-Hub works with **any tool that speaks OpenAI-compatible APIs**. Each client can be assigned a dedicated port with its own routing strategy, so you get independent failover, cost tracking, and observability per tool.
+LLM-Failsafe works with **any tool that speaks OpenAI-compatible APIs**. Each client can be assigned a dedicated port with its own routing strategy, so you get independent failover, cost tracking, and observability per tool.
 
 | Client | Protocol | Example Port | Configuration |
 |---|---|---|---|
@@ -162,8 +167,8 @@ LLM-Hub works with **any tool that speaks OpenAI-compatible APIs**. Each client 
 Use the dedicated Responses API listener:
 
 ```toml
-[model_providers.llmhub]
-name = "llmhub"
+[model_providers.llmfailsafe]
+name = "llmfailsafe"
 base_url = "http://127.0.0.1:4105"
 wire_api = "responses"
 requires_openai_auth = true
@@ -214,7 +219,7 @@ graph LR
         D[Cursor / Aider / ... :4000]
     end
 
-    subgraph LLM-Hub Gateway
+    subgraph LLM-Failsafe Gateway
         E[Multi-Port Listeners]
         F{Protocol Detection}
         G[Route Planner]

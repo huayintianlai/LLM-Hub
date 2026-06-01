@@ -1,6 +1,6 @@
 # Compatibility Matrix
 
-This matrix documents the compatibility surface that LLM-Hub is designed to support. It is intentionally provider-neutral: entries describe protocol behavior and client integration patterns rather than endorsing a specific commercial provider.
+This matrix documents the compatibility surface that LLM-Failsafe is designed to support. It is intentionally provider-neutral: entries describe protocol behavior and client integration patterns rather than endorsing a specific commercial provider.
 
 ## Client Compatibility
 
@@ -25,7 +25,7 @@ This matrix documents the compatibility surface that LLM-Hub is designed to supp
 
 ## Provider Capability Shapes
 
-| Provider Shape | Responses API | Chat Completions | Streaming | Usage Metadata | Expected LLM-Hub Behavior |
+| Provider Shape | Responses API | Chat Completions | Streaming | Usage Metadata | Expected LLM-Failsafe Behavior |
 |---|---|---|---|---|---|
 | Full OpenAI-compatible provider | Yes | Yes | Provider-specific | Usually present | Prefer passthrough, track usage, fallback on failures |
 | Responses-native provider | Yes | Optional | Provider-specific | Varies | Use Responses passthrough for Codex CLI traffic |

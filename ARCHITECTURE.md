@@ -1,6 +1,6 @@
-# LLM-Hub Architecture
+# LLM-Failsafe Architecture
 
-LLM-Hub is a local OpenAI-compatible gateway for AI coding tools and other local clients. It provides stable local listener ports, protocol-aware routing, upstream failover, request logging, and dashboard APIs.
+LLM-Failsafe is a local OpenAI-compatible gateway for AI coding tools and other local clients. It provides stable local listener ports, protocol-aware routing, upstream failover, request logging, and dashboard APIs.
 
 ## Design Intent
 
@@ -56,7 +56,7 @@ The most important maintenance surface is upstream compatibility. Providers can 
 - how model aliases map to concrete model names
 - how transient errors and rate limits are represented
 
-LLM-Hub keeps those differences behind capability declarations so clients can keep using a stable local OpenAI-compatible endpoint.
+LLM-Failsafe keeps those differences behind capability declarations so clients can keep using a stable local OpenAI-compatible endpoint.
 
 ## Upstream Capability Model
 
@@ -70,11 +70,11 @@ Each upstream declares:
 - streaming requirements and event format
 - routing priority and cost metadata
 
-These declarations let LLM-Hub plan safe routes before making network calls.
+These declarations let LLM-Failsafe plan safe routes before making network calls.
 
 ## Observability
 
-LLM-Hub records request metadata asynchronously so request handling is not blocked by database writes. Stored data includes app name, port, protocol, route mode, upstream, latency, status, token usage, cost estimates, and error details.
+LLM-Failsafe records request metadata asynchronously so request handling is not blocked by database writes. Stored data includes app name, port, protocol, route mode, upstream, latency, status, token usage, cost estimates, and error details.
 
 The dashboard reads summary APIs for:
 
@@ -90,4 +90,4 @@ SQLite is the default local storage engine. PostgreSQL support is available for 
 
 ## Security Boundary
 
-LLM-Hub is designed for local deployment. Real API keys belong in `.env` or a secret manager, not in repository files. If listener ports are exposed beyond localhost, protect them with a firewall, reverse proxy authentication, or a trusted network boundary.
+LLM-Failsafe is designed for local deployment. Real API keys belong in `.env` or a secret manager, not in repository files. If listener ports are exposed beyond localhost, protect them with a firewall, reverse proxy authentication, or a trusted network boundary.

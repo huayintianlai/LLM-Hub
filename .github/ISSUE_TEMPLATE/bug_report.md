@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Report a reproducible LLM-Hub bug
+about: Report a reproducible LLM-Failsafe bug
 title: "[Bug]: "
 labels: bug
 assignees: ""
@@ -17,7 +17,7 @@ assignees: ""
 - OS:
 - Node.js version:
 - Deployment: local script / Docker / launchd / other
-- LLM-Hub commit or version:
+- LLM-Failsafe commit or version:
 
 ## Logs or screenshots
 

@@ -1,6 +1,6 @@
 # Ecosystem Position
 
-LLM-Hub is a local compatibility and observability layer for AI coding tools that use OpenAI-compatible APIs. It is designed for developers who run more than one local agent or editor integration and need stable routing across providers with different protocol behavior.
+LLM-Failsafe is a local compatibility and observability layer for AI coding tools that use OpenAI-compatible APIs. It is designed for developers who run more than one local agent or editor integration and need stable routing across providers with different protocol behavior.
 
 ## Problem Space
 
@@ -16,9 +16,9 @@ OpenAI-compatible clients and providers do not always agree on the same API surf
 
 These differences are manageable for a single script, but they become hard to maintain when several local coding tools share the same credentials, budget, and failover requirements.
 
-## LLM-Hub's Role
+## LLM-Failsafe's Role
 
-LLM-Hub keeps client configuration stable while making upstream behavior explicit and observable.
+LLM-Failsafe keeps client configuration stable while making upstream behavior explicit and observable.
 
 | Layer | Responsibility |
 |---|---|
@@ -30,7 +30,7 @@ LLM-Hub keeps client configuration stable while making upstream behavior explici
 
 ## Why It Is Not Just a Proxy
 
-A simple proxy forwards traffic from one endpoint to another. LLM-Hub adds the operational surface needed by local AI tooling:
+A simple proxy forwards traffic from one endpoint to another. LLM-Failsafe adds the operational surface needed by local AI tooling:
 
 - protocol-aware routing for `/responses` and `/chat/completions`
 - automatic Responses API to Chat Completions transformation when a backup route requires it

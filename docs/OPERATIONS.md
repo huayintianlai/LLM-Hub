@@ -8,7 +8,7 @@
 ## Log Management
 - Gateway logs stream to `logs/gateway.log`. Rotate them nightly with `./scripts/rotate-logs.sh`.
 - After rotation, restart the gateway to guarantee tailers re-open the file.
-- Keep long-term archives outside the repo (e.g., `/var/log/llm-hub/`).
+- Keep long-term archives outside the repo (e.g., `/var/log/llm-failsafe/`).
 
 ## Process Control
 - Use `./scripts/start-gateway.sh` and `./scripts/stop-gateway.sh` for lifecycle management.

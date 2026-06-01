@@ -1,6 +1,6 @@
-# LLM-Hub Technical Spec
+# LLM-Failsafe Technical Spec
 
-LLM-Hub is a local OpenAI-compatible gateway that routes AI client traffic to one or more upstream providers while preserving client-facing compatibility.
+LLM-Failsafe is a local OpenAI-compatible gateway that routes AI client traffic to one or more upstream providers while preserving client-facing compatibility.
 
 ## Goals
 
@@ -50,7 +50,7 @@ The circuit breaker opens after repeated upstream failures, waits through a cool
 
 ## Token and Cost Accounting
 
-When upstream responses include usage metadata, LLM-Hub records it directly. When usage is missing or incomplete, the gateway estimates token counts with the local token counter and calculates cost from upstream cost metadata.
+When upstream responses include usage metadata, LLM-Failsafe records it directly. When usage is missing or incomplete, the gateway estimates token counts with the local token counter and calculates cost from upstream cost metadata.
 
 ## Deployment
 

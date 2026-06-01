@@ -1,6 +1,6 @@
 # Database guide
 
-`LLM-Hub` persists telemetry and routing state in a single database. The default is SQLite for Phase 1, but the schema and tools are compatible with PostgreSQL as well.
+`LLM-Failsafe` persists telemetry and routing state in a single database. The default is SQLite for Phase 1, but the schema and tools are compatible with PostgreSQL as well.
 
 ## Schema
 

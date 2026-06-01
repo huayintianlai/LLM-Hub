@@ -23,4 +23,4 @@ Report privately by emailing the maintainer or opening a GitHub security advisor
 
 ## Runtime Notes
 
-LLM-Hub is designed as a local gateway. If you expose it on a network, protect listener ports with host firewall rules, reverse-proxy authentication, or trusted network boundaries.
+LLM-Failsafe is designed as a local gateway. If you expose it on a network, protect listener ports with host firewall rules, reverse-proxy authentication, or trusted network boundaries.

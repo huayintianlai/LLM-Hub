@@ -56,7 +56,7 @@ upstreams:
       per_1k_prompt: 0.01
       per_1k_completion: 0.03
 
-  # Backup provider that only supports Chat Completions. LLM-Hub can transform
+  # Backup provider that only supports Chat Completions. LLM-Failsafe can transform
   # Responses API traffic when failover requires this route.
   - id: backup-openai-compatible
     name: Backup OpenAI-Compatible Provider
